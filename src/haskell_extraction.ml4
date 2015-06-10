@@ -2,6 +2,8 @@
 
 open Hextraction
 
-VERNAC COMMAND EXTEND Hextraction CLASSIFIED AS QUERY
+VERNAC COMMAND EXTEND HExtraction CLASSIFIED AS QUERY
 | [ "Hextraction" ne_global_list(x) ] -> [ extraction x ]
+| [ "Hextraction" "Module" ne_global_list(x) ] -> [ module_extraction x ]
 END
+

@@ -8,28 +8,33 @@ module Empty : sig
 
 type 'a hs_type =
   | TyVar of 'a
-  | TyArrow
+  | TyArrow of 'a hs_type * 'a hs_type
   | TyApp of 'a hs_type * 'a hs_type
-  | TyForall of Empty.t option hs_kind * 'a option hs_type
+  | TyForall of Empty.t hs_kind * 'a option hs_type
   | TyConst of hs_name
   | TyUnknown
-and _ hs_kind =
-  | KStar : Empty.t option hs_kind
-  | KApp : 'a option hs_kind * 'a hs_kind -> 'a hs_kind
-  | KArrow : Empty.t option hs_kind * Empty.t option hs_kind -> Empty.t option hs_kind
-  | KConst : hs_name * 'a hs_type -> 'a hs_kind
+and 'a hs_kind =
+  | KVar of 'a
+  | KStar
+  | KApp of 'a option hs_kind * 'a hs_kind
+  | KArrow of 'a hs_kind * 'a hs_kind
+  | KConst of 'a var_sing * hs_name * 'a option hs_type
+  | KUnknown
 and 'a hs_ind = {
     ind_name : string;
     ind_arity : 'a var_sing;
-    (* ind_singleton : 'a option hs_type; *)
-    ind_signature : 'a -> Empty.t option hs_kind;
-    ind_constructor_signatures : any_hs_ind_signature array;
+    ind_signature : 'a -> Empty.t hs_kind;
+    ind_constructor_signatures : any_hs_constructor_signature array;
     ind_gconstructors : Empty.t hs_type array;
     ind_constructors : Empty.t hs_type array;
     ind_consnames : string array
   }
-and any_hs_ind_signature = Any_hs_ind_signature : 'a var_sing (* * 'a option hs_type  *)* ('a -> Empty.t option hs_kind) -> any_hs_ind_signature
-and any_hs_ind = Any_hs_ind : 'a hs_ind -> any_hs_ind
+and any_hs_ind =
+    Any_hs_ind : 'a hs_ind -> any_hs_ind
+and any_hs_signature =
+    Any_hs_signature : 'a var_sing * ('a -> Empty.t hs_kind) -> any_hs_signature
+and any_hs_constructor_signature =
+    Any_hs_constructor_signature : 'a var_sing * 'b var_sing * ('a -> 'b hs_kind) -> any_hs_constructor_signature
 and _ var_sing =
   | Var_empty : Empty.t var_sing
   | Var_next  : 'a var_sing -> 'a option var_sing
@@ -42,6 +47,8 @@ and hs_name =
   | Hs_sconstrname of string
   | Hs_gconstrname of string
 
+
+
                                   
 type (_, _) eq = Refl : ('a, 'a) eq
 val fold_var_sing : ('a -> 'b) -> 'c -> ('b -> 'c -> 'c) -> 'a var_sing -> 'c
@@ -51,16 +58,14 @@ val var_dec_eq : 'a var_sing -> 'b var_sing -> ('a, 'b) eq option
                                                         
 val is_unlifted_kind : 'a hs_kind -> bool
                                                         
-val ty_arrow : 'a hs_type -> 'a hs_type -> 'a hs_type
-                                                        
 val map_type : ('a -> 'b) -> 'a hs_type -> 'b hs_type
 val lift_type : 'a hs_type -> 'a option hs_type
 val subst_type : ('a -> 'b hs_type) -> 'a hs_type -> 'b hs_type
 val subst_type1 : 'a hs_type -> 'a option hs_type -> 'a hs_type
 val simpl_type : 'a hs_type -> 'a hs_type
 
-val sing_of : ('b -> 'a hs_type) -> 'b hs_kind -> 'a hs_type
-val constructor_signature : 'a hs_type -> any_hs_ind_signature
+val sing_of : ('b option -> 'a option hs_type) -> 'b hs_kind -> 'a option hs_type
+val constructor_signature : 'a hs_type -> any_hs_constructor_signature
 
 val pr_hs_name : hs_name -> std_ppcmds
 val pr_hs_type : 'a hs_type -> std_ppcmds

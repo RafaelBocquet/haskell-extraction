@@ -1,0 +1,14 @@
+-I src
+-I test-suite
+-Q theories HaskellExtraction
+-I theories
+
+src/hextraction.mli
+src/hextraction.ml
+src/minihs.mli
+src/minihs.ml
+src/haskell_extraction.ml4
+src/haskell_extraction_plugin.mllib
+
+theories/HaskellExtraction.v
+test-suite/Test.v
