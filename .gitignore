@@ -1,0 +1,12 @@
+*.cmo
+*.bak
+*.glob
+*.cmx
+*.o
+*.cmi
+*.cma
+*.cmxs
+*.vo
+*.d
+*.aux
+
