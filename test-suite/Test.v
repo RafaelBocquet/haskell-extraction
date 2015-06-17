@@ -8,17 +8,19 @@ Require Import
   Coq.Vectors.VectorSpec
 .
 
-Hextraction Module
-            Coq.Init.Notations
-            Coq.Init.Datatypes
-            (* Coq.Init.Logic *)
-            (* Coq.Init.Logic_Type *)
-            (* Coq.Init.Peano *)
-            (* Coq.Init.Specif *)
-            (* Coq.Init.Tactics *)
-            (* Coq.Init.Wf *)
-            (* Coq.Setoids.Setoid *)
-            Coq.Vectors.Fin
-            (* Coq.Vectors.VectorDef *)
-            (* Coq.Vectors.VectorSpec *)
+Hextraction
+  Coq.Init.Logic
+  Coq.Init.Logic_Type
+  Coq.Init.Notations
+  Coq.Init.Datatypes
+  (* Coq.Init.Peano *)
+  (* Coq.Init.Specif *)
+  (* Coq.Init.Tactics *)
+  (* Coq.Vectors.Fin *)
+  ,
+  (* Coq.Init.Logic_Type *)
+  (* Coq.Init.Wf *)
+  (* Coq.Setoids.Setoid *)
+  (* Coq.Vectors.VectorDef *)
+  (* Coq.Vectors.VectorSpec *)
 .

@@ -7,6 +7,11 @@ open Environ
 open Reduction
 open Reductionops
 
+let id x = x
+let cons x xs = x :: xs
+let some x = Some x
+let rmap f g = fun x -> f (g x)
+
 (* empty type *)
 module Empty = struct
   type t = {e : 'a. 'a}
@@ -33,12 +38,28 @@ let option_bind f = function
 
 let option_sequence l = List.fold_right (Option.lift2 (fun x xs -> x :: xs)) l (Some [])
 
+(* map *)
+let memoize_map (type a) (module M : CMap.S with type key = a) = fun f ->
+  let m = ref M.empty in fun x ->
+    msg_info (int (M.cardinal !m));
+    try M.find x !m
+    with Not_found ->
+      let y = f x in
+      m := M.add x y !m; M.find x !m
+
 (* coq *)
 
 let rec signature_view env c =
   match kind_of_term (whd_betadeltaiota env Evd.empty c) with
   | Prod (x, t, c) ->
     let args, ty = signature_view (push_rel (x,None,t) env) c in
+    (env, t) :: args, ty
+  | _ -> [], (env, c)
+
+let rec abstraction_view env c =
+  match kind_of_term (whd_betadeltaiota env Evd.empty c) with
+  | Lambda (x, t, c) ->
+    let args, ty = abstraction_view (push_rel (x,None,t) env) c in
     (env, t) :: args, ty
   | _ -> [], (env, c)
 
