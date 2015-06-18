@@ -18,6 +18,7 @@ let keywords = [ "if"; "of"; "in"; "do"
                ; "while"
                ; "fromSing" ; "sing"
                ; "Sing"; "ToSing"; "FromSing"; "TyArr"; "TyPi"
+               ; "T"
                ]
 let ids = let open Sequence in
   let r = map Char.chr (Char.code 'a' -- Char.code 'z') in
@@ -66,6 +67,11 @@ and ('a, 'b) hs_signature =
   | Sig_next : 'a hs_kind * ('a option, 'b) hs_signature -> ('a, 'b) hs_signature
 and 'a any_hs_signature =
   | Any_signature : ('a, 'b) hs_signature -> 'a any_hs_signature
+and ('a, 'b) hs_kind_signature =
+  | KSig_empty : 'b hs_kind -> ('b, 'b) hs_kind_signature
+  | KSig_next : 'a hs_kind * ('a option, 'b) hs_kind_signature -> ('a, 'b) hs_kind_signature
+and 'a any_hs_kind_signature =
+  | Any_kind_signature : ('a, 'b) hs_kind_signature -> 'a any_hs_kind_signature
 and 'a any_hs_equation =
   | Any_equation : 'b svar * 'b hs_type list * 'b hs_type -> 'a any_hs_equation
 and hs_name =
@@ -78,14 +84,14 @@ and hs_name =
   | Hs_ename of string
 and hs_ind =
   { ind_name : string
-  ; ind_signature : Empty.t any_hs_signature
+  ; ind_signature : Empty.t any_hs_kind_signature
   ; ind_consnames : string array
   ; ind_constypes : Empty.t hs_type array
   ; ind_consarities : bool list array
   }
 and hs_type_family =
   { tf_name      : string
-  ; tf_signature : Empty.t any_hs_signature option
+  ; tf_signature : Empty.t any_hs_kind_signature option
   ; tf_closed    : bool
   ; tf_equations : Empty.t any_hs_equation array
   }
@@ -159,9 +165,17 @@ module DefunOrdered = struct
 end
 module DefunMap = CMap.Make(DefunOrdered)
 
+module NameOrdered = struct
+  type t = hs_name
+  let compare = Pervasives.compare
+end
+module Namemap = CMap.Make(NameOrdered)
+
+
 
 type hs_elem =
   | Hs_ind of inductive
+  | Hs_sind of inductive
   | Hs_const of Constant.t
   | Hs_symbol of hs_symbol
   | Hs_typefamily of hs_type_family
@@ -170,12 +184,14 @@ type state =
   ; st_inductives : hs_ind Indmap.t
   ; st_constants : hs_constant Names.Cmap.t
   ; st_defunctionalise_map : any_hs_kind DefunMap.t
+  ; st_defunctionalise_const_map : hs_name Namemap.t
   }
 let empty_state =
   { st_list = []
   ; st_inductives = Indmap.empty
   ; st_constants = Cmap.empty
   ; st_defunctionalise_map = DefunMap.empty
+  ; st_defunctionalise_const_map = Namemap.empty
   }
 let state = ref empty_state
 
@@ -234,6 +250,11 @@ let rec signature_last : type a b. (a, b) hs_signature -> b hs_type = function
   | Sig_empty a -> a
   | Sig_next (_, a) -> signature_last a
 
+let rec fold_left_kind_signature : type a b c z. (unit -> b) -> (a -> b -> a) -> a -> (c, z) hs_kind_signature -> a =
+  fun f g a -> function
+    | KSig_empty _ -> a
+    | KSig_next (_, s) -> fold_left_kind_signature f g (g a (f ())) s
+
 let rec fold_left_signature : type a b c z. (unit -> b) -> (a -> b -> a) -> a -> (c, z) hs_signature -> a =
   fun f g a -> function
     | Sig_empty _ -> a
@@ -283,14 +304,58 @@ let rec type_arity : type a. a hs_type -> int = fun t ->
   let Any_signature s = view_type_signature t in
   List.length (fst (view_type_arrow (signature_last s)))
 
-let rec defunctionalise : type a. a svar -> (a -> a hs_kind) -> a hs_type -> a hs_kind =
+let rec mk_constant : type a b. hs_name -> a svar -> (a -> a hs_kind) -> (a, b) hs_kind_signature -> hs_name * a hs_kind =
+  fun n v vs -> function
+    | KSig_empty k     -> n, k
+    | KSig_next (k, s) ->
+      let na = mk_tid () and nb = mk_tid () in
+      let n', k' = mk_constant n (V_next v) (extend_kind_list (lift_kind k) vs) s in
+      let sb = Any_symbol (nb, V_next v, extend_kind_list (KArrow' (lift_kind k, KStar)) vs) in
+      let tb = { tf_signature = None
+               ; tf_name      = "(@@)"
+               ; tf_closed    = false
+               ; tf_equations = Array.make 1
+                     (Any_equation ( V_next v
+                                   , [ type_application (TyConst (Hs_dataname nb))
+                                         (List.rev (fold_right_svar (fun x -> TyVar (Some x)) cons v []))
+                                     ; TyVar None]
+                                   , TyKind k'))
+               } in
+      let kb = kind_application (KConst (Hs_dataname nb))
+          (List.rev (fold_right_svar (fun x -> KVar x) cons v [])) in
+      let sa = Any_symbol (na, V_next v, extend_kind_list (KPi' (lift_kind k, lift_kind kb)) vs) in
+      let ta = { tf_signature = None
+               ; tf_name      = "(@@@)"
+               ; tf_closed    = false
+               ; tf_equations = Array.make 1
+                     (Any_equation ( V_next v
+                                   , [ type_application
+                                        (TyConst (Hs_dataname na))
+                                        (List.rev (fold_right_svar (fun x -> TyVar (Some x)) cons v []))
+                                     ; TyVar None]
+                                   , type_application
+                                       (TyConst n')
+                                        (List.rev (fold_right_svar (fun x -> TyVar x) cons (V_next v) []))))
+               } in
+      state := { !state with
+                 st_list =
+                   Hs_typefamily ta ::
+                   Hs_symbol sa ::
+                   Hs_typefamily tb ::
+                   Hs_symbol sb ::
+                   !state.st_list
+               };
+      Hs_dataname na,
+      KPi (k, kb)
+
+and defunctionalise : type a. a svar -> (a -> a hs_kind) -> a hs_type -> a hs_kind =
   fun v vs -> function
     | TyStar -> KStar
     | TyForall (k, a) -> KPi (k, defunctionalise_lambda v vs k a)
     | TyVar v -> KVar v
     | TyApp (a, b) -> KFunapp (defunctionalise v vs a, defunctionalise v vs b)
     | TyKind k -> k
-    | TyConst s -> KConst s
+    | TyConst s -> KConst (defunctionalise_const s)
     | TySing (a, b) -> KSing (a, b)
     | TyArrow (a, b) -> KArrow (defunctionalise v vs a, defunctionalise v vs b)
     | t -> msg_error (str "DEFUN : " ++ pr_hs_type t); KUnknown
@@ -327,6 +392,11 @@ and defunctionalise_lambda : type a. a svar -> (a -> a hs_kind) -> a hs_kind -> 
                    DefunMap.add (DefunOrdered.T (v, vs, k, a)) (Any_kind (v, k'))
                      !state.st_defunctionalise_map
                }; k'
+and defunctionalise_const : hs_name -> hs_name =
+  fun n ->
+    try Namemap.find n !state.st_defunctionalise_const_map
+    with Not_found -> msg_error (str "No constant for : " ++ pr_hs_name n); failwith ""
+
 and singletonise :  type a. a svar -> (a -> a hs_kind) -> a hs_type -> a hs_type =
   fun v vs ty ->
     let Any_signature s = view_type_signature ty in
@@ -524,17 +594,17 @@ and pr_hs_type_forall : type a b. (a -> std_ppcmds) -> (a, b) hs_signature -> st
       let n = str (mk_id ()) in
       spc () ++ str "(" ++ n ++ spc () ++ str "::" ++ spc () ++
       pr_hs_kind' false f k ++ str ")" ++ pr_hs_type_forall (Option.cata f n) s
-and pr_hs_signature : type a b. (a, b) hs_signature -> std_ppcmds =
-  fun s -> pr_hs_signature' (fun _ -> str "UNBOUND_VAR") s
-and pr_hs_signature' : type a b. (a -> std_ppcmds) -> (a, b) hs_signature -> std_ppcmds =
+and pr_hs_kind_signature : type a b. (a, b) hs_kind_signature -> std_ppcmds =
+  fun s -> pr_hs_kind_signature' (fun _ -> str "UNBOUND_VAR") s
+and pr_hs_kind_signature' : type a b. (a -> std_ppcmds) -> (a, b) hs_kind_signature -> std_ppcmds =
   fun f -> function
-    | Sig_empty ty -> spc () ++ str "::" ++ spc () ++ pr_hs_type' false f ty
-    | Sig_next (k, s) ->
+    | KSig_empty ty -> spc () ++ str "::" ++ spc () ++ pr_hs_kind' false f ty
+    | KSig_next (k, s) ->
       let n = str (mk_id ()) in
       spc () ++ str "(" ++ n ++ spc () ++ str "::" ++ spc () ++
-      pr_hs_kind' false f k ++ str ")" ++ pr_hs_signature' (Option.cata f n) s
-and pr_any_hs_signature : type a. a any_hs_signature -> std_ppcmds = function
-  | Any_signature s -> pr_hs_signature s
+      pr_hs_kind' false f k ++ str ")" ++ pr_hs_kind_signature' (Option.cata f n) s
+and pr_any_hs_kind_signature : type a. a any_hs_kind_signature -> std_ppcmds = function
+  | Any_kind_signature s -> pr_hs_kind_signature s
 and pr_hs_name : hs_name -> std_ppcmds = fun n -> pr_hs_name_par false n
 and pr_hs_name_par : type a. bool -> hs_name -> std_ppcmds = fun par -> function
   | Hs_dataname s -> str s
@@ -554,7 +624,7 @@ and pr_hs_type_family : hs_type_family -> std_ppcmds = fun tf ->
    | Some s ->
      h 0 (str "type family" ++ spc () ++
           pr_hs_name (Hs_dataname tf.tf_name) ++ spc () ++
-          pr_any_hs_signature s ++
+          pr_any_hs_kind_signature s ++
           (if tf.tf_closed then str "where" else mt ())
          ) ++ fnl ()
    | None -> mt ()) ++
@@ -612,26 +682,24 @@ and pr_hs_con_pattern' : type a. bool -> (a -> std_ppcmds) -> a hs_con_pattern -
                            pr_hs_pattern' true (fun x -> f (Either.right x)) p)
 and pr_hs_ind : hs_ind -> std_ppcmds = fun ind ->
   h 0 (str "data" ++ spc () ++ str ind.ind_name ++
-       pr_any_hs_signature ind.ind_signature ++ spc () ++ str "where" ++ fnl ()) ++
+       pr_any_hs_kind_signature ind.ind_signature ++ spc () ++ str "where" ++ fnl ()) ++
   hov 2 (str "  " ++
          prvecti_with_sep fnl (fun i c ->
              pr_hs_name (Hs_constrname ind.ind_consnames.(i)) ++
              spc () ++ str "::" ++ spc () ++
              hov 2 (ws 2 ++ pr_hs_type c)
            ) ind.ind_constypes
-        ) ++ fnl () ++
-  pr_hs_sing ind ++
+        ) ++ fnl ()
   (* FIXME : do not always apply FromSing or ToSing, to prevent several layers of Sing *)
   (* pr_hs_type_family (tosing_type_family ind) ++ fnl () ++ *)
   (* pr_hs_type_family (fromsing_type_family ind) ++ fnl () ++ *)
   (* pr_hs_singinstance ind ++ *)
-  fnl ()
 and pr_hs_sing : hs_ind -> std_ppcmds = fun ind ->
-  let Any_signature s = ind.ind_signature in
+  let Any_kind_signature s = ind.ind_signature in
   h 0 (str "data instance" ++ spc () ++ str "Sing" ++ spc () ++
        (match s with
-        | Sig_empty _ -> str ind.ind_name
-        | _ -> pp_par true (fold_left_signature (fun _ -> str (mk_id ()))
+        | KSig_empty _ -> str ind.ind_name
+        | _ -> pp_par true (fold_left_kind_signature (fun _ -> str (mk_id ()))
                               (fun a b -> a ++ spc () ++ b) (str ind.ind_name) s)) ++ spc () ++
        str (mk_id ()) ++ spc () ++
        str "where" ++ fnl ()
@@ -647,11 +715,11 @@ and pr_hs_sing : hs_ind -> std_ppcmds = fun ind ->
         ) ++ fnl () ++
   pr_th_hack ()
 and pr_hs_singinstance : hs_ind -> std_ppcmds = fun ind ->
-  let Any_signature s = ind.ind_signature in
+  let Any_kind_signature s = ind.ind_signature in
   h 0 (str "instance SingKind" ++ spc () ++
        (match s with
-        | Sig_empty _ -> str ind.ind_name
-        | _ -> pp_par true (fold_left_signature (fun _ -> str (mk_id ()))
+        | KSig_empty _ -> str ind.ind_name
+        | _ -> pp_par true (fold_left_kind_signature (fun _ -> str (mk_id ()))
                               (fun a b -> a ++ spc () ++ b) (str ind.ind_name) s)) ++ spc () ++
        str "where"
       ) ++ fnl () ++

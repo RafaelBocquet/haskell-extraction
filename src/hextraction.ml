@@ -89,14 +89,15 @@ and extract_type_constructor_arities_signature : type a. inductive -> Environ.en
 
 let rec extract_signature df env c =
   let cs, (envl, l) = signature_view env c in
-  let rec extract_signature' : type a. a svar -> (a -> a hs_kind) -> a option list -> (Environ.env * constr) list -> a any_hs_signature = fun v ks vs -> function
-    | [] -> Any_signature (Sig_empty (extract_type df v ks vs envl l))
+  let rec extract_signature' : type a. a svar -> (a -> a hs_kind) -> a option list -> (Environ.env * constr) list -> a any_hs_kind_signature = fun v ks vs -> function
+    | [] -> Any_kind_signature (KSig_empty (extract_kind df v ks vs envl l))
     | (env, c) :: cs ->
       let k = extract_kind df v ks vs env c in
-      let Any_signature s = extract_signature' (V_next v) (extend_kind_list (lift_kind k) ks) (Some None :: List.map some vs) cs in
-      Any_signature (Sig_next (k, s))
+      let Any_kind_signature s = extract_signature' (V_next v) (extend_kind_list (lift_kind k) ks) (Some None :: List.map some vs) cs in
+      Any_kind_signature (KSig_next (k, s))
   in
   extract_signature' V_empty Empty.absurd [] cs
+
 
 let rec extract_inductive env kn =
   let mib = Environ.lookup_mind kn env in
@@ -107,18 +108,23 @@ and extract_one_inductive_signature env kn mib i mip =
   let ar = Inductive.type_of_inductive env ((mib,mip),u) in
   msg_info (str "Inductive signature : " ++ Printer.pr_constr ar);
   let nm = String.capitalize (Id.to_string (mip.mind_typename)) in
-  let s = extract_signature (Some (kn,i)) env ar in
-  msg_info (str nm ++ pr_any_hs_signature s);
+  let Any_kind_signature s = extract_signature (Some (kn,i)) env ar in
   state := { !state with
              st_inductives = Indmap.add
                  (kn, i)
                  { ind_name        = nm
-                 ; ind_signature   = s
+                 ; ind_signature   = Any_kind_signature s
                  ; ind_consnames   = Array.map (fun s -> String.capitalize (Names.Id.to_string s)) mip.mind_consnames
                  ; ind_constypes   = Array.map (fun s -> TyStar) mip.mind_consnames
                  ; ind_consarities = Array.map (fun s -> []) mip.mind_consnames
                  }
                  !state.st_inductives
+           ; st_list = Hs_ind (kn,i) :: !state.st_list
+           };
+  let ct, _ = mk_constant (Hs_dataname nm) V_empty Empty.absurd s in
+  state := { !state with
+             st_defunctionalise_const_map =
+               Namemap.add (Hs_dataname nm) ct !state.st_defunctionalise_const_map
            }
 and extract_one_inductive_constructors env kn mib i mip =
   let (ind,u), ctx = Universes.fresh_inductive_instance env (kn,i) in
@@ -132,8 +138,8 @@ and extract_one_inductive_constructors env kn mib i mip =
                  (kn,i)
                  (fun _ a -> { a with ind_constypes = constypes
                                     ; ind_consarities = consarities })
-                 !state.st_inductives;
-             st_list = Hs_ind (kn,i) :: !state.st_list
+                 !state.st_inductives
+           ; st_list = Hs_sind (kn,i) :: !state.st_list
            }
 
 let rec extract_constant env kn =
@@ -286,6 +292,7 @@ let out () =
 
     List.fold_right (fun i acc -> acc ++ match i with
       | Hs_ind i -> pr_hs_ind (Indmap.find i !state.st_inductives)
+      | Hs_sind i -> pr_hs_sing (Indmap.find i !state.st_inductives)
       | Hs_const c -> pr_hs_constant (Cmap.find c !state.st_constants)
       | Hs_symbol s -> pr_hs_symbol s ++ pr_th_hack ()
       | Hs_typefamily f -> pr_hs_type_family f ++ pr_th_hack ()

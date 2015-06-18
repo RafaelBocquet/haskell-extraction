@@ -11,6 +11,7 @@ let id x = x
 let cons x xs = x :: xs
 let some x = Some x
 let rmap f g = fun x -> f (g x)
+let flip f x y = f y x
 
 (* empty type *)
 module Empty = struct
