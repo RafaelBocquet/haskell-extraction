@@ -1,0 +1,9 @@
+TODO
+
+LICENSE ?
+
+Current output from test-suite/Test.v may be in OUT.hs
+
+Relevant links :
+ - https://github.com/coq/coq/tree/trunk/plugins/extraction
+ - https://github.com/goldfirere/ghc

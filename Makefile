@@ -64,7 +64,7 @@ COQDOCLIBS?=-Q "theories" HaskellExtraction
 #                        #
 ##########################
 
-OCAMLLIBS=-package sequence -I src -I test-suite -I theories
+OCAMLLIBS=-package sequence -package ocamlgraph -I src -I test-suite -I theories
 CAMLOPTLINK=ocamlfind opt -rectypes -thread -linkpkg
 CAMLLINK=ocamlfind ocamlc -rectypes -thread -linkpkg
 CAMLOPTC=ocamlfind opt -c -rectypes -thread -linkpkg

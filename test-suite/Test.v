@@ -17,7 +17,7 @@ Hextraction
   Coq.Init.Specif
   Coq.Init.Tactics
   Coq.Vectors.Fin
-  Coq.Init.Wf
+  (* Coq.Init.Wf *)
   (* Coq.Setoids.Setoid *)
   (* Coq.Vectors.VectorDef *)
   (* Coq.Vectors.VectorSpec *)

@@ -60,16 +60,16 @@ and extract_type_application : type a. inductive option -> a svar -> (a -> a hs_
       )
     | Rel x, bs when x <= List.length vs ->
       type_application
-        (TyKind (Option.cata (fun a -> KVar a) KUnknown (List.nth vs (x-1))))
+        (TyKind (match List.nth vs (x-1) with | Some v -> KVar v | None -> msg_error (str "UNKNOWN VAR"); KUnknown))
         (List.map (extract_type df v ks vs env) bs)
     | Construct ((n,i),_), bs ->
       (try
          let ind = Indmap.find n !state.st_inductives in
          type_application
-           (TyConst (Hs_pconstrname ind.ind_consnames.(i-1)))
+           (TyConst (Hs_pconstrname (ind.ind_name, i-1)))
            (List.map2
               (function
-                | true -> fun t -> TyApp (TyConst (Hs_dataname "ToSing"), extract_type df v ks vs env t)
+                | true -> fun t -> TyApp (TyConst Hs_ToSing, extract_type df v ks vs env t)
                 | false -> extract_type df v ks vs env
               ) ind.ind_consarities.(i-1) bs)
        with Not_found -> failwith "")
@@ -109,37 +109,43 @@ and extract_one_inductive_signature env kn mib i mip =
   msg_info (str "Inductive signature : " ++ Printer.pr_constr ar);
   let nm = String.capitalize (Id.to_string (mip.mind_typename)) in
   let Any_kind_signature s = extract_signature (Some (kn,i)) env ar in
+  let ct, _ = mk_constant (Hs_dataname (kn, i)) V_empty Empty.absurd s in
+  let ind = { ind_name        = (kn, i)
+            ; ind_printname   = nm
+            ; ind_signature   = Any_kind_signature s
+            ; ind_consnames   = Array.map (fun s -> "BAD") mip.mind_consnames
+            ; ind_constypes   = Array.map (fun s -> TyStar) mip.mind_consnames
+            ; ind_sconstypes  = Array.map (fun s -> TyStar) mip.mind_consnames
+            ; ind_consarities = Array.map (fun s -> []) mip.mind_consnames
+            } in
   state := { !state with
              st_inductives = Indmap.add
-                 (kn, i)
-                 { ind_name        = nm
-                 ; ind_signature   = Any_kind_signature s
-                 ; ind_consnames   = Array.map (fun s -> String.capitalize (Names.Id.to_string s)) mip.mind_consnames
-                 ; ind_constypes   = Array.map (fun s -> TyStar) mip.mind_consnames
-                 ; ind_consarities = Array.map (fun s -> []) mip.mind_consnames
-                 }
-                 !state.st_inductives
-           ; st_list = Hs_ind (kn,i) :: !state.st_list
+                 (kn, i) ind !state.st_inductives
+           ; st_list = Hs_sind (kn,i) :: Hs_ind (kn,i) :: !state.st_list
            };
-  let ct, _ = mk_constant (Hs_dataname nm) V_empty Empty.absurd s in
   state := { !state with
              st_defunctionalise_const_map =
-               Namemap.add (Hs_dataname nm) ct !state.st_defunctionalise_const_map
+               Namemap.add (Hs_dataname ind.ind_name) ct !state.st_defunctionalise_const_map
            }
 and extract_one_inductive_constructors env kn mib i mip =
   let (ind,u), ctx = Universes.fresh_inductive_instance env (kn,i) in
   let types = arities_of_constructors env ((kn,i),u) in
   Array.iter (fun x -> msg_info (str "Constructor signature : " ++ Printer.pr_constr x)) types;
+  let consnames =  Array.map (fun s -> String.capitalize (Names.Id.to_string s)) mip.mind_consnames in
   let constypes = Array.map (extract_type_singleton (Some (kn,i)) V_empty Empty.absurd [] env) types in
+  let sconstypes = Array.mapi (fun j c -> singleton_constructor V_empty Empty.absurd
+                                  (TyConst (Hs_pconstrname ((kn, i), j))) c) constypes in
   let consarities = Array.map (extract_type_constructor_arities (kn,i) env) types in
   state := { !state with
              st_inductives =
                Indmap.modify
                  (kn,i)
-                 (fun _ a -> { a with ind_constypes = constypes
+                 (fun _ a -> { a with ind_consnames = consnames
+                                    ; ind_constypes = constypes
+                                    ; ind_sconstypes = sconstypes
                                     ; ind_consarities = consarities })
                  !state.st_inductives
-           ; st_list = Hs_sind (kn,i) :: !state.st_list
+           ; st_list = !state.st_list
            }
 
 let rec extract_constant env kn =
@@ -268,19 +274,19 @@ let out () =
 
     str "data instance Sing * x where" ++ fnl () ++
     str "  SStar :: forall (x :: *). Sing * x" ++ fnl () ++
-    str "$(do TH.reportWarning \"Typechecked TyArr\"; P.return [])" ++ fnl () ++ fnl () ++
+    str "$(do TH.reportWarning \"Typechecked SStar\"; P.return [])" ++ fnl () ++ fnl () ++
 
-    str "data TyArr' (a :: *) (b :: *) :: *" ++ fnl () ++
-    str "type TyArr (a :: *) (b :: *) = TyArr' a b -> *" ++ fnl () ++
-    str "type family (a :: TyArr k1 k2) @@ (b :: k1) :: k2" ++ fnl () ++
-    str "data TyPi' (a :: *) (b :: TyArr a *) :: *" ++ fnl () ++
-    str "type TyPi (a :: *) (b :: TyArr a *) = TyPi' a b -> *" ++ fnl () ++
+    str "data TyFun' (a :: *) (b :: *) :: *" ++ fnl () ++
+    str "type TyFun (a :: *) (b :: *) = TyFun' a b -> *" ++ fnl () ++
+    str "type family (a :: TyFun k1 k2) @@ (b :: k1) :: k2" ++ fnl () ++
+    str "data TyPi' (a :: *) (b :: TyFun a *) :: *" ++ fnl () ++
+    str "type TyPi (a :: *) (b :: TyFun a *) = TyPi' a b -> *" ++ fnl () ++
     str "type family (a :: TyPi k1 k2) @@@ (b :: k1) :: k2 @@ b" ++ fnl () ++
     str "data instance Sing (TyPi k1 k2) x where" ++ fnl () ++
     str "  SLambda :: (forall (t :: k1). Sing k1 t -> Sing (k2 @@ t) (f @@@ t)) -> Sing (TyPi k1 k2) f" ++ fnl () ++
     str "unSLambda :: Sing (TyPi k1 k2) f -> (forall t. Sing k1 t -> Sing (k2 @@ t) (f @@@ t))" ++ fnl () ++
     str "unSLambda (SLambda x) = x" ++ fnl () ++
-    str "$(do TH.reportWarning \"Typechecked TyArr & TyPi\"; P.return [])" ++ fnl () ++ fnl () ++
+    str "$(do TH.reportWarning \"Typechecked TyFun & TyPi\"; P.return [])" ++ fnl () ++ fnl () ++
 
     str "data instance Sing (Sing k x) y where" ++ fnl () ++
     str "  SSing :: forall (y :: Sing k x). Sing k x -> Sing (Sing k x) y" ++ fnl () ++
@@ -291,12 +297,12 @@ let out () =
     str "  fromSing (SSing x) = x" ++ fnl () ++ fnl () ++
 
     List.fold_right (fun i acc -> acc ++ match i with
-      | Hs_ind i -> pr_hs_ind (Indmap.find i !state.st_inductives)
-      | Hs_sind i -> pr_hs_sing (Indmap.find i !state.st_inductives)
+      | Hs_ind d -> pr_hs_ind (Indmap.find d !state.st_inductives)
+      | Hs_sind d -> pr_hs_sing (Indmap.find d !state.st_inductives)
       | Hs_const c -> pr_hs_constant (Cmap.find c !state.st_constants)
-      | Hs_symbol s -> pr_hs_symbol s ++ pr_th_hack ()
-      | Hs_typefamily f -> pr_hs_type_family f ++ pr_th_hack ()
-      ) (!state.st_list) (mt ()));
+      | Hs_symbol s -> pr_hs_symbol (Stringmap.find s !state.st_symbols) ++ pr_th_hack ()
+      | Hs_typefamily (a, b) -> pr_hs_type_family (Tfmap.find (a, b) !state.st_typefamilies) ++ pr_th_hack ()
+      ) (List.concat (List.rev (sort_elems !state.st_list))) (mt ()));
   close_out cout
 
 

@@ -1,4 +1,8 @@
 *.cmo
+.merlin
+*.dyn_o
+*.dyn_hi
+*.hi
 *.bak
 *.glob
 *.cmx
