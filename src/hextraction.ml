@@ -107,7 +107,7 @@ and extract_one_inductive_signature env kn mib i mip =
   let (ind,u), ctx = Universes.fresh_inductive_instance env (kn,i) in
   let ar = Inductive.type_of_inductive env ((mib,mip),u) in
   msg_info (str "Inductive signature : " ++ Printer.pr_constr ar);
-  let nm = String.capitalize (Id.to_string (mip.mind_typename)) in
+  let nm = find_dataname (String.capitalize (Id.to_string (mip.mind_typename))) in
   let Any_kind_signature s = extract_signature (Some (kn,i)) env ar in
   let ct, _ = mk_constant (Hs_dataname (kn, i)) V_empty Empty.absurd s in
   let ind = { ind_name        = (kn, i)
@@ -131,7 +131,7 @@ and extract_one_inductive_constructors env kn mib i mip =
   let (ind,u), ctx = Universes.fresh_inductive_instance env (kn,i) in
   let types = arities_of_constructors env ((kn,i),u) in
   Array.iter (fun x -> msg_info (str "Constructor signature : " ++ Printer.pr_constr x)) types;
-  let consnames =  Array.map (fun s -> String.capitalize (Names.Id.to_string s)) mip.mind_consnames in
+  let consnames =  Array.map (fun s -> find_constrname (String.capitalize (Names.Id.to_string s))) mip.mind_consnames in
   let constypes = Array.map (extract_type_singleton (Some (kn,i)) V_empty Empty.absurd [] env) types in
   let sconstypes = Array.mapi (fun j c -> singleton_constructor V_empty Empty.absurd
                                   (TyConst (Hs_pconstrname ((kn, i), j))) c) constypes in
@@ -150,27 +150,9 @@ and extract_one_inductive_constructors env kn mib i mip =
 
 let rec extract_constant env kn =
   let cb = Environ.lookup_constant kn env in
-  let nm = String.uncapitalize (Label.to_string (Constant.label kn)) in
-  let ty = (match cb.const_type with
-      | RegularArity ty -> msg_info (Printer.pr_constr ty); let t = extract_type_singleton None V_empty Empty.absurd [] env ty in msg_info (pr_hs_type t); t
-      | TemplateArity _ -> failwith "TemplateArity"
-    ) in
-  (* let ex = (match cb.const_body with *)
-  (*     | Def a -> (try extract_term true [] [] env (Mod_subst.force_constr a) *)
-  (*                 with _ -> EUnknown) *)
-  (*     | _     -> msg_error (Names.Constant.print kn); EUnknown *)
-  (*   ) in *)
-  state := { !state with
-             st_constants =
-               Cmap.add
-                 kn
-                 { const_name = nm
-                 ; const_type = ty
-                 ; const_expr = EUnknown
-                 }
-                 !state.st_constants;
-             st_list = Hs_const kn :: !state.st_list
-           }
+  match cb.const_body with
+  | Def a -> msg_error (pr_hs_kind (extract_kind None V_empty Empty.absurd [] env (Mod_subst.force_constr a)))
+  | _     -> msg_error (Names.Constant.print kn)
 (* and extract_term : type a b. bool -> a list -> b hs_type list -> Environ.env -> constr -> (a, b) hs_expr = *)
 (*   fun sg vs ts env c -> match kind_of_term (whd_betadeltaiota env Evd.empty c)  with *)
 (*     | Lambda (x,t,c) -> *)
@@ -296,13 +278,14 @@ let out () =
     str "instance SingKind (Sing k x) where" ++ fnl () ++
     str "  fromSing (SSing x) = x" ++ fnl () ++ fnl () ++
 
-    List.fold_right (fun i acc -> acc ++ match i with
-      | Hs_ind d -> pr_hs_ind (Indmap.find d !state.st_inductives)
-      | Hs_sind d -> pr_hs_sing (Indmap.find d !state.st_inductives)
-      | Hs_const c -> pr_hs_constant (Cmap.find c !state.st_constants)
-      | Hs_symbol s -> pr_hs_symbol (Stringmap.find s !state.st_symbols) ++ pr_th_hack ()
-      | Hs_typefamily (a, b) -> pr_hs_type_family (Tfmap.find (a, b) !state.st_typefamilies) ++ pr_th_hack ()
-      ) (List.concat (List.rev (sort_elems !state.st_list))) (mt ()));
+    List.fold_right (fun i acc -> List.fold_right (fun i acc -> acc ++ match i with
+        | Hs_ind d -> pr_hs_ind (Indmap.find d !state.st_inductives)
+        | Hs_sind d -> pr_hs_sing (Indmap.find d !state.st_inductives)
+        | Hs_const c -> pr_hs_constant (Cmap.find c !state.st_constants)
+        | Hs_symbol s -> pr_hs_symbol (Stringmap.find s !state.st_symbols)
+        | Hs_typefamily (a, b) -> pr_hs_type_family (Tfmap.find (a, b) !state.st_typefamilies)
+      ) i (acc ++ pr_th_hack ())
+      ) (List.rev (sort_elems !state.st_list)) (mt ()));
   close_out cout
 
 

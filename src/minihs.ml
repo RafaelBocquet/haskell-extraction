@@ -181,6 +181,7 @@ module StringOrdered = struct
   type t = string
   let compare = Pervasives.compare
 end
+module Stringset = Set.Make(StringOrdered)
 module Stringmap = CMap.Make(StringOrdered)
 
 module TfOrdered = struct
@@ -205,6 +206,11 @@ type state =
   ; st_typefamilies : hs_type_family Tfmap.t
   ; st_defunctionalise_map : any_hs_kind DefunMap.t
   ; st_defunctionalise_const_map : hs_name Namemap.t
+
+  ; st_defined_datanames : Stringset.t
+  ; st_defined_constrnames : Stringset.t
+
+  ; st_reductions : hs_name Namemap.t (* stupid : if A -> B in reductions, A a b c ... @@@/@@ x -> A a b c ... x  *)
   }
 let empty_state =
   { st_list = []
@@ -214,8 +220,37 @@ let empty_state =
   ; st_typefamilies = Tfmap.empty
   ; st_defunctionalise_map = DefunMap.empty
   ; st_defunctionalise_const_map = Namemap.empty
+
+  ; st_defined_datanames = Stringset.empty
+  ; st_defined_constrnames = Stringset.empty
+
+  ; st_reductions = Namemap.empty
   }
 let state = ref empty_state
+
+let find_dataname s =
+  let rec find_dataname' i =
+    let n = s ^ Option.cata string_of_int "" i in
+    let i' = Some (Option.cata ((+) 1) 0 i) in
+    if Stringset.mem n !state.st_defined_datanames
+    then find_dataname' i'
+    else n
+  in
+  let n = find_dataname' None in
+  state := { !state with st_defined_datanames = Stringset.add n !state.st_defined_datanames };
+  n
+
+let find_constrname s =
+  let rec find_constrname' i =
+    let n = s ^ Option.cata string_of_int "" i in
+    let i' = Some (Option.cata ((+) 1) 0 i) in
+    if Stringset.mem n !state.st_defined_constrnames
+    then find_constrname' i'
+    else n
+  in
+  let n = find_constrname' None in
+  state := { !state with st_defined_constrnames = Stringset.add n !state.st_defined_constrnames };
+  n
 
 module ElemOrdered = struct
   type t = hs_elem
@@ -324,6 +359,7 @@ let rec lift_type_signature : type a b. (a, b) hs_signature -> a hs_type -> b hs
 
 let type_application f args = List.fold_left (fun x y -> TyApp (x, y)) f args
 let kind_application f args = List.fold_left (fun x y -> KApp (x, y)) f args
+let kind_fun_application f args = List.fold_left (fun x y -> KFunapp (x, y)) f args
 let expr_application f args = List.fold_left (fun x y -> EApp (x, y)) f args
 
 let rec view_type_signature : type a b. a hs_type -> a any_hs_signature =
@@ -354,18 +390,40 @@ and view_type_application : type a. a hs_type -> a hs_type * a hs_type list =
   fun ty -> view_type_application' ty []
 
 let rec view_kind_application' : type a. a hs_kind -> a hs_kind list -> a hs_kind * a hs_kind list =
-  fun k acc -> match k with
-    | KApp (a, b) ->
+  fun k acc -> match k, acc with
+    | KApp (a, b), _ ->
       view_kind_application' a (b :: acc)
     | _ -> k, acc
 and view_kind_application : type a. a hs_kind -> a hs_kind * a hs_kind list =
   fun k -> view_kind_application' k []
 
+let rec view_kind_fun_application' : type a. a hs_kind -> a hs_kind list -> a hs_kind * a hs_kind list =
+  fun k acc -> match k, acc with
+    | KFunapp (a, b), _ ->
+      view_kind_fun_application' a (b :: acc)
+    | _ -> k, acc
+and view_kind_fun_application : type a. a hs_kind -> a hs_kind * a hs_kind list =
+  fun k -> view_kind_fun_application' k []
+
 let rec type_arity : type a. a hs_type -> int = fun t ->
   let Any_signature s = view_type_signature t in
   List.length (fst (view_type_arrow (signature_last s)))
 
-let rec mk_constant : type a b. hs_name -> a svar -> (a -> a hs_kind) -> (a, b) hs_kind_signature -> hs_name * a hs_kind =
+
+let rec reduce_kind : type a. a hs_kind -> a hs_kind =
+  fun k ->
+    let k, bs = view_kind_fun_application k in
+    let k, cs = view_kind_application k in
+    reduce_kind' k cs bs
+and reduce_kind' : type a. a hs_kind -> a hs_kind list -> a hs_kind list -> a hs_kind =
+  fun k bs cs -> match k, cs with
+    | KConst s, c :: cs ->
+      (try reduce_kind' (KConst (Namemap.find s !state.st_reductions)) (bs @ [c]) cs
+       with Not_found -> kind_fun_application (kind_application k bs) (c :: cs)
+      )
+    | _ -> kind_fun_application (kind_application k bs) cs
+
+and mk_constant : type a b. hs_name -> a svar -> (a -> a hs_kind) -> (a, b) hs_kind_signature -> hs_name * a hs_kind =
   fun n v vs -> function
     | KSig_empty k     -> n, k
     | KSig_next (k, s) ->
@@ -409,7 +467,10 @@ let rec mk_constant : type a b. hs_name -> a svar -> (a -> a hs_kind) -> (a, b) 
                    Hs_symbol na :: Hs_typefamily ("@@@", na) ::
                    Hs_symbol nb :: Hs_typefamily ("@@", nb) ::
                    !state.st_list
+               ; st_reductions = Namemap.add (Hs_symbolname na) n' !state.st_reductions
                };
+      msg_error (str na);
+      msg_error (str nb);
       Hs_symbolname na,
       KPi (k, kb)
 
@@ -458,7 +519,7 @@ and defunctionalise_lambda : type a. a svar -> (a -> a hs_kind) -> a hs_kind -> 
                    !state.st_list
                ; st_defunctionalise_map =
                    DefunMap.add (DefunOrdered.T (v, vs, k, a)) (Any_kind (v, k')) !state.st_defunctionalise_map
-               }; k'
+               }; msg_error (str "AA " ++ str nb); k'
 and defunctionalise_const : hs_name -> hs_name =
   fun n ->
     try Namemap.find n !state.st_defunctionalise_const_map
@@ -621,6 +682,8 @@ and pr_hs_kind : type a. a hs_kind -> std_ppcmds = fun ty -> pr_hs_kind_par fals
 and pr_hs_kind_par : type a. bool -> a hs_kind -> std_ppcmds =
   fun par ty -> pr_hs_kind' par (fun _ -> str "UNBOUND_VAR") ty
 and pr_hs_kind' : type a. bool -> (a -> std_ppcmds) -> a hs_kind -> std_ppcmds =
+  fun par f k -> pr_hs_kind'' par f (reduce_kind k)
+and pr_hs_kind'' : type a. bool -> (a -> std_ppcmds) -> a hs_kind -> std_ppcmds =
   fun par f -> function
     | KStar -> str "*"
     | KVar x -> f x
@@ -780,8 +843,7 @@ and pr_hs_sing : hs_ind -> std_ppcmds = fun ind ->
              spc () ++ str "::" ++ spc () ++
              hov 2 (ws 2 ++ pr_hs_type c)
            ) ind.ind_sconstypes
-        ) ++ fnl () ++
-  pr_th_hack ()
+        ) ++ fnl ()
 and pr_hs_singinstance : hs_ind -> std_ppcmds = fun ind ->
   let Any_kind_signature s = ind.ind_signature in
   h 0 (str "instance SingKind" ++ spc () ++
@@ -841,9 +903,9 @@ and elem_succ : hs_elem -> Elemset.t = function
        Elemset.union
          (Option.cata (fun (Any_kind_signature s) -> kind_signature_succ s) Elemset.empty tf.tf_signature)
          (Array.fold_left Elemset.union Elemset.empty
-            (Array.map equation_succ tf.tf_equations))
+            (Array.map (equation_succ b) tf.tf_equations))
      with Not_found -> failwith "TODO TF")
-and equation_succ (Any_equation (a, b, c)) =
+and equation_succ a (Any_equation (_, b, c)) =
   Elemset.union (List.fold_left Elemset.union Elemset.empty (List.map type_succ b))
     (type_succ c)
 and name_succ = function
@@ -856,15 +918,16 @@ and name_succ = function
   | Hs_ToSing | Hs_FromSing -> Elemset.empty
   | Hs_ename _ -> failwith ""
 and type_succ : type a. a hs_type -> Elemset.t = function
-  | TyStar | TyVar _ | TyUnknown -> Elemset.empty
-  | TyApp (a, b) | TyArrow (a, b) -> Elemset.union (type_succ a) (type_succ b)
-  | TyForall (a, b) -> Elemset.union (kind_succ a) (type_succ b)
-  | TyConst n -> name_succ n
-  | TyKind k | TySing (k, _) -> kind_succ k
-and kind_succ : type a. a hs_kind -> Elemset.t = function
+  | TyStar | TyVar _ | TyUnknown ->  Elemset.empty
+  | TyApp (a, b) | TyArrow (a, b) ->  Elemset.union (type_succ a) (type_succ b)
+  | TyForall (a, b) ->  Elemset.union (kind_succ a) (type_succ b)
+  | TyConst n ->  name_succ n
+  | TyKind k | TySing (k, _) ->  kind_succ k
+and kind_succ : type a. a hs_kind -> Elemset.t = fun k -> kind_succ' (reduce_kind k)
+and kind_succ' : type a. a hs_kind -> Elemset.t = function
   | KStar | KUnknown | KVar _ -> Elemset.empty
   | KApp (a, b)
-  | KArrow (a, b) | KArrow' (a, b) -> Elemset.union (kind_succ a) (kind_succ b)
+  | KArrow (a, b) | KArrow' (a, b) ->  Elemset.union (kind_succ a) (kind_succ b)
   | KFunapp (a, b) ->
     Elemset.union
       (Elemset.union (kind_succ a) (kind_succ b))
@@ -879,8 +942,8 @@ and kind_succ : type a. a hs_kind -> Elemset.t = function
        | KConst (Hs_symbolname s), _ -> Elemset.singleton (Hs_typefamily ("@@", s))
        | _ -> Elemset.empty
       )
-  | KSing (k, a) -> kind_succ k
-  | KConst s -> name_succ s
+  | KSing (k, a) ->  kind_succ k
+  | KConst s ->  name_succ s
 and kind_signature_succ : type a b. (a, b) hs_kind_signature -> Elemset.t = function
   | KSig_empty k -> kind_succ k
   | KSig_next (k, s) -> Elemset.union (kind_succ k) (kind_signature_succ s)

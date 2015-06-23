@@ -43,683 +43,1088 @@ type instance FromSing ('SSing y) = y
 instance SingKind (Sing k x) where
   fromSing (SSing x) = x
 
+$(P.return [])
 data Nat :: * where
   O ::   Nat
   S ::   Nat -> Nat
-data T (c :: Nat) :: * where
-  F1 ::   forall (a :: Nat). (Sing Nat a) -> T ('S a)
-  FS ::   forall (b :: Nat). (Sing Nat b) -> (T b) -> T ('S b)
-data CW (d :: TyFun' Nat *)
 $(P.return [])
-type instance (@@) CW e = *
+data T0 (e :: *) (f :: Nat) :: * where
+  Nil0 ::   forall (a :: *). (Sing * a) -> T0 a 'O
+  Cons0 ::   forall (b :: *) (c :: b) (d :: Nat). (Sing * b) -> (Sing b c) -> (Sing Nat d) -> (T0 b d) -> T0 b ('S d)
 $(P.return [])
-data CV (f :: TyPi' Nat CW)
+data ED (i :: *) (h :: *) (g :: TyFun' i *)
 $(P.return [])
-type instance (@@@) CV g = T g
+data EE (m :: *) (l :: *) (k :: m) (j :: TyFun' l *)
 $(P.return [])
-data instance Sing (T n) m where
-  SF1 ::   forall (h :: Nat) (i :: Sing Nat h). (Sing Nat h) -> Sing' ('F1 i)
-  SFS ::   forall (j :: Nat) (k :: Sing Nat j) (l :: CV @@@ j). (Sing Nat j) -> (Sing (CV @@@ j) l) -> Sing' ('FS k l)
+type instance (@@) (EE q p o) n = *
 $(P.return [])
-data Sumor (u :: *) (v :: *) :: * where
-  Inleft ::   forall (o :: *) (p :: *) (q :: o). (Sing * o) -> (Sing * p) -> (Sing o q) -> Sumor o p
-  Inright ::   forall (r :: *) (s :: *) (t :: s). (Sing * r) -> (Sing * s) -> (Sing s t) -> Sumor r s
-data instance Sing (Sumor aj ak) ai where
+type instance (@@) (ED t s) r = TyPi s (EE t s r)
+$(P.return [])
+data Exists2 (al :: *) (am :: *) (an :: TyPi al (ED al am)) (ao :: Nat) (ap :: T0 al ao) (aq :: T0 am ao) :: * where
+  Exists2_cons_hd ::
+    forall (u :: *) (v :: *) (w :: TyPi u (ED u v)) (x :: Nat) (y :: u) (z :: v) (aa :: T0 u x) (ab :: T0 v x) (ac :: w
+    @@@ y @@@ z). (Sing * u) -> (Sing * v) -> (Sing (TyPi u (ED u v)) w) -> (Sing Nat x) -> (Sing u y) -> (Sing v z) ->
+    (Sing (T0 u x) aa) -> (Sing (T0 v x) ab) -> (Sing (w @@@ y @@@ z) ac) -> Exists2 u v w ('S x) ('Cons0 (ToSing u)
+    (ToSing y) (ToSing x) aa) ('Cons0 (ToSing v) (ToSing z) (ToSing x) ab)
+  Exists2_cons_tl ::
+    forall (ad :: *) (ae :: *) (af :: TyPi ad (ED ad ae)) (ag :: Nat) (ah :: ad) (ai :: ae) (aj :: T0 ad ag) (ak :: T0
+    ae ag). (Sing * ad) -> (Sing * ae) -> (Sing (TyPi ad (ED ad ae)) af) -> (Sing Nat ag) -> (Sing ad ah) -> (Sing ae
+    ai) -> (Sing (T0 ad ag) aj) -> (Sing (T0 ae ag) ak) -> (Exists2 ad ae af ag aj ak) -> Exists2 ad ae af ('S ag)
+    ('Cons0 (ToSing ad) (ToSing ah) (ToSing ag) aj) ('Cons0 (ToSing ae) (ToSing ai) (ToSing ag) ak)
+$(P.return [])
+data instance Sing (Exists2 cb cc cd ce cf cg) ca where
+  SExists2_cons_hd ::
+    forall (ar :: *) (as :: *) (at :: TyPi ar (ED ar as)) (au :: Nat) (av :: ar) (aw :: as) (ax :: T0 ar au) (ay :: T0
+    as au) (az :: at @@@ av @@@ aw) (ba :: Sing * ar) (bb :: Sing * as) (bc :: Sing (TyPi ar (ED ar as)) at) (bd ::
+    Sing Nat au) (be :: Sing ar av) (bf :: Sing as aw) (bg :: Sing (T0 ar au) ax) (bh :: Sing (T0 as au) ay) (bi ::
+    Sing (at @@@ av @@@ aw) az). (Sing * ar) -> (Sing * as) -> (Sing (TyPi ar (ED ar as)) at) -> (Sing Nat au) -> (Sing
+    ar av) -> (Sing as aw) -> (Sing (T0 ar au) ax) -> (Sing (T0 as au) ay) -> (Sing (at @@@ av @@@ aw) az) -> Sing'
+    ('Exists2_cons_hd ba bb bc bd be bf bg bh bi)
+  SExists2_cons_tl ::
+    forall (bj :: *) (bk :: *) (bl :: TyPi bj (ED bj bk)) (bm :: Nat) (bn :: bj) (bo :: bk) (bp :: T0 bj bm) (bq :: T0
+    bk bm) (br :: Sing * bj) (bs :: Sing * bk) (bt :: Sing (TyPi bj (ED bj bk)) bl) (bu :: Sing Nat bm) (bv :: Sing bj
+    bn) (bw :: Sing bk bo) (bx :: Sing (T0 bj bm) bp) (by :: Sing (T0 bk bm) bq) (bz :: Exists2 bj bk bl bm bp bq).
+    (Sing * bj) -> (Sing * bk) -> (Sing (TyPi bj (ED bj bk)) bl) -> (Sing Nat bm) -> (Sing bj bn) -> (Sing bk bo) ->
+    (Sing (T0 bj bm) bp) -> (Sing (T0 bk bm) bq) -> (Sing (Exists2 bj bk bl bm bp bq) bz) -> Sing' ('Exists2_cons_tl br
+    bs bt bu bv bw bx by bz)
+$(P.return [])
+data ES (ch :: TyFun' * *)
+$(P.return [])
+data EU (cj :: *) (ci :: TyFun' * *)
+$(P.return [])
+data EW (cm :: *) (cl :: *) (ck :: TyFun' (TyPi cm (ED cm cl)) *)
+$(P.return [])
+data EY (cq :: *) (cp :: *) (co :: TyPi cq (ED cq cp)) (cn :: TyFun' Nat *)
+$(P.return [])
+data FA (cv :: *) (cu :: *) (ct :: TyPi cv (ED cv cu)) (cs :: Nat) (cr :: TyFun' (T0 cv cs) *)
+$(P.return [])
+data FC (db :: *) (da :: *) (cz :: TyPi db (ED db da)) (cy :: Nat) (cx :: T0 db cy) (cw :: TyFun' (T0 da cy) *)
+$(P.return [])
+type instance (@@) (FC dh dg df de dd) dc = *
+$(P.return [])
+type instance (@@) (FA dm dl dk dj) di = TyPi (T0 dl dj) (FC dm dl dk dj di)
+$(P.return [])
+type instance (@@) (EY dr dq dp) dn = TyPi (T0 dr dn) (FA dr dq dp dn)
+$(P.return [])
+type instance (@@) (EW du dt) ds = TyPi Nat (EY du dt ds)
+$(P.return [])
+type instance (@@) (EU dw) dv = TyPi (TyPi dw (ED dw dv)) (EW dw dv)
+$(P.return [])
+type instance (@@) ES dx = TyPi * (EU dx)
+$(P.return [])
+data ER (dy :: TyPi' * ES)
+$(P.return [])
+data ET (ea :: *) (dz :: TyPi' * (EU ea))
+$(P.return [])
+type instance (@@@) ER eb = ET eb
+$(P.return [])
+data EV (ee :: *) (ed :: *) (ec :: TyPi' (TyPi ee (ED ee ed)) (EW ee ed))
+$(P.return [])
+type instance (@@@) (ET eg) ef = EV eg ef
+$(P.return [])
+data EX (ek :: *) (ej :: *) (ei :: TyPi ek (ED ek ej)) (eh :: TyPi' Nat (EY ek ej ei))
+$(P.return [])
+type instance (@@@) (EV en em) el = EX en em el
+$(P.return [])
+data EZ (es :: *) (er :: *) (eq :: TyPi es (ED es er)) (ep :: Nat) (eo :: TyPi' (T0 es ep) (FA es er eq ep))
+$(P.return [])
+type instance (@@@) (EX ew ev eu) et = EZ ew ev eu et
+$(P.return [])
+data FB (fc :: *) (fb :: *) (fa :: TyPi fc (ED fc fb)) (ez :: Nat) (ey :: T0 fc ez) (ex :: TyPi' (T0 fb ez) (FC fc fb fa ez ey))
+$(P.return [])
+type instance (@@@) (EZ fh fg ff fe) fd = FB fh fg ff fe fd
+$(P.return [])
+type instance (@@@) (FB fn fm fl fk fj) fi = Exists2 fn fm fl fk fj fi
+$(P.return [])
+data Forall2 (ga :: *) (gb :: *) (gc :: TyPi ga (ED ga gb)) (gd :: Nat) (ge :: T0 ga gd) (gf :: T0 gb gd) :: * where
+  Forall2_nil ::
+    forall (fo :: *) (fp :: *) (fq :: TyPi fo (ED fo fp)). (Sing * fo) -> (Sing * fp) -> (Sing (TyPi fo (ED fo fp)) fq)
+    -> Forall2 fo fp fq 'O ('Nil0 (ToSing fo)) ('Nil0 (ToSing fp))
+  Forall2_cons ::
+    forall (fr :: *) (fs :: *) (ft :: TyPi fr (ED fr fs)) (fu :: Nat) (fv :: fr) (fw :: fs) (fx :: T0 fr fu) (fy :: T0
+    fs fu) (fz :: ft @@@ fv @@@ fw). (Sing * fr) -> (Sing * fs) -> (Sing (TyPi fr (ED fr fs)) ft) -> (Sing Nat fu) ->
+    (Sing fr fv) -> (Sing fs fw) -> (Sing (T0 fr fu) fx) -> (Sing (T0 fs fu) fy) -> (Sing (ft @@@ fv @@@ fw) fz) ->
+    (Forall2 fr fs ft fu fx fy) -> Forall2 fr fs ft ('S fu) ('Cons0 (ToSing fr) (ToSing fv) (ToSing fu) fx) ('Cons0
+    (ToSing fs) (ToSing fw) (ToSing fu) fy)
+$(P.return [])
+data instance Sing (Forall2 hg hh hi hj hk hl) hf where
+  SForall2_nil ::
+    forall (gg :: *) (gh :: *) (gi :: TyPi gg (ED gg gh)) (gj :: Sing * gg) (gk :: Sing * gh) (gl :: Sing (TyPi gg (ED
+    gg gh)) gi). (Sing * gg) -> (Sing * gh) -> (Sing (TyPi gg (ED gg gh)) gi) -> Sing' ('Forall2_nil gj gk gl)
+  SForall2_cons ::
+    forall (gm :: *) (gn :: *) (go :: TyPi gm (ED gm gn)) (gp :: Nat) (gq :: gm) (gr :: gn) (gs :: T0 gm gp) (gt :: T0
+    gn gp) (gu :: go @@@ gq @@@ gr) (gv :: Sing * gm) (gw :: Sing * gn) (gx :: Sing (TyPi gm (ED gm gn)) go) (gy ::
+    Sing Nat gp) (gz :: Sing gm gq) (ha :: Sing gn gr) (hb :: Sing (T0 gm gp) gs) (hc :: Sing (T0 gn gp) gt) (hd ::
+    Sing (go @@@ gq @@@ gr) gu) (he :: Forall2 gm gn go gp gs gt). (Sing * gm) -> (Sing * gn) -> (Sing (TyPi gm (ED gm
+    gn)) go) -> (Sing Nat gp) -> (Sing gm gq) -> (Sing gn gr) -> (Sing (T0 gm gp) gs) -> (Sing (T0 gn gp) gt) -> (Sing
+    (go @@@ gq @@@ gr) gu) -> (Sing (Forall2 gm gn go gp gs gt) he) -> Sing' ('Forall2_cons gv gw gx gy gz ha hb hc hd
+    he)
+$(P.return [])
+data EG (hm :: TyFun' * *)
+$(P.return [])
+data EI (ho :: *) (hn :: TyFun' * *)
+$(P.return [])
+data EK (hr :: *) (hq :: *) (hp :: TyFun' (TyPi hr (ED hr hq)) *)
+$(P.return [])
+data EM (hv :: *) (hu :: *) (ht :: TyPi hv (ED hv hu)) (hs :: TyFun' Nat *)
+$(P.return [])
+data EO (ia :: *) (hz :: *) (hy :: TyPi ia (ED ia hz)) (hx :: Nat) (hw :: TyFun' (T0 ia hx) *)
+$(P.return [])
+data EQ (ih :: *) (ig :: *) (ie :: TyPi ih (ED ih ig)) (id :: Nat) (ic :: T0 ih id) (ib :: TyFun' (T0 ig id) *)
+$(P.return [])
+type instance (@@) (EQ io im il ik ij) ii = *
+$(P.return [])
+type instance (@@) (EO it is ir iq) ip = TyPi (T0 is iq) (EQ it is ir iq ip)
+$(P.return [])
+type instance (@@) (EM ix iw iv) iu = TyPi (T0 ix iu) (EO ix iw iv iu)
+$(P.return [])
+type instance (@@) (EK ja iz) iy = TyPi Nat (EM ja iz iy)
+$(P.return [])
+type instance (@@) (EI jc) jb = TyPi (TyPi jc (ED jc jb)) (EK jc jb)
+$(P.return [])
+type instance (@@) EG jd = TyPi * (EI jd)
+$(P.return [])
+data EF (je :: TyPi' * EG)
+$(P.return [])
+data EH (jg :: *) (jf :: TyPi' * (EI jg))
+$(P.return [])
+type instance (@@@) EF jh = EH jh
+$(P.return [])
+data EJ (jk :: *) (jj :: *) (ji :: TyPi' (TyPi jk (ED jk jj)) (EK jk jj))
+$(P.return [])
+type instance (@@@) (EH jm) jl = EJ jm jl
+$(P.return [])
+data EL (jq :: *) (jp :: *) (jo :: TyPi jq (ED jq jp)) (jn :: TyPi' Nat (EM jq jp jo))
+$(P.return [])
+type instance (@@@) (EJ jt js) jr = EL jt js jr
+$(P.return [])
+data EN (jy :: *) (jx :: *) (jw :: TyPi jy (ED jy jx)) (jv :: Nat) (ju :: TyPi' (T0 jy jv) (EO jy jx jw jv))
+$(P.return [])
+type instance (@@@) (EL kc kb ka) jz = EN kc kb ka jz
+$(P.return [])
+data EP (ki :: *) (kh :: *) (kg :: TyPi ki (ED ki kh)) (kf :: Nat) (ke :: T0 ki kf) (kd :: TyPi' (T0 kh kf) (EQ ki kh kg kf ke))
+$(P.return [])
+type instance (@@@) (EN kn km kl kk) kj = EP kn km kl kk kj
+$(P.return [])
+type instance (@@@) (EP kt ks kr kq kp) ko = Forall2 kt ks kr kq kp ko
+$(P.return [])
+data In (ld :: *) (le :: ld) (lf :: Nat) (lg :: T0 ld lf) :: * where
+  In_cons_hd ::
+    forall (ku :: *) (kv :: ku) (kw :: Nat) (kx :: T0 ku kw). (Sing * ku) -> (Sing ku kv) -> (Sing Nat kw) -> (Sing (T0
+    ku kw) kx) -> In ku kv ('S kw) ('Cons0 (ToSing ku) (ToSing kv) (ToSing kw) kx)
+  In_cons_tl ::
+    forall (ky :: *) (kz :: ky) (la :: Nat) (lb :: ky) (lc :: T0 ky la). (Sing * ky) -> (Sing ky kz) -> (Sing Nat la)
+    -> (Sing ky lb) -> (Sing (T0 ky la) lc) -> (In ky kz la lc) -> In ky kz ('S la) ('Cons0 (ToSing ky) (ToSing lb)
+    (ToSing la) lc)
+$(P.return [])
+data instance Sing (In mb mc md me) ma where
+  SIn_cons_hd ::
+    forall (lh :: *) (li :: lh) (lj :: Nat) (lk :: T0 lh lj) (ll :: Sing * lh) (lm :: Sing lh li) (ln :: Sing Nat lj)
+    (lo :: Sing (T0 lh lj) lk). (Sing * lh) -> (Sing lh li) -> (Sing Nat lj) -> (Sing (T0 lh lj) lk) -> Sing'
+    ('In_cons_hd ll lm ln lo)
+  SIn_cons_tl ::
+    forall (lp :: *) (lq :: lp) (lr :: Nat) (ls :: lp) (lt :: T0 lp lr) (lu :: Sing * lp) (lv :: Sing lp lq) (lw ::
+    Sing Nat lr) (lx :: Sing lp ls) (ly :: Sing (T0 lp lr) lt) (lz :: In lp lq lr lt). (Sing * lp) -> (Sing lp lq) ->
+    (Sing Nat lr) -> (Sing lp ls) -> (Sing (T0 lp lr) lt) -> (Sing (In lp lq lr lt) lz) -> Sing' ('In_cons_tl lu lv lw
+    lx ly lz)
+$(P.return [])
+data DW (mf :: TyFun' * *)
+$(P.return [])
+data DY (mh :: *) (mg :: TyFun' mh *)
+$(P.return [])
+data EA (mk :: *) (mj :: mk) (mi :: TyFun' Nat *)
+$(P.return [])
+data EC (mo :: *) (mn :: mo) (mm :: Nat) (ml :: TyFun' (T0 mo mm) *)
+$(P.return [])
+type instance (@@) (EC ms mr mq) mp = *
+$(P.return [])
+type instance (@@) (EA mv mu) mt = TyPi (T0 mv mt) (EC mv mu mt)
+$(P.return [])
+type instance (@@) (DY mx) mw = TyPi Nat (EA mx mw)
+$(P.return [])
+type instance (@@) DW my = TyPi my (DY my)
+$(P.return [])
+data DV (mz :: TyPi' * DW)
+$(P.return [])
+data DX (nb :: *) (na :: TyPi' nb (DY nb))
+$(P.return [])
+type instance (@@@) DV nc = DX nc
+$(P.return [])
+data DZ (nf :: *) (ne :: nf) (nd :: TyPi' Nat (EA nf ne))
+$(P.return [])
+type instance (@@@) (DX nh) ng = DZ nh ng
+$(P.return [])
+data EB (nl :: *) (nk :: nl) (nj :: Nat) (ni :: TyPi' (T0 nl nj) (EC nl nk nj))
+$(P.return [])
+type instance (@@@) (DZ no nn) nm = EB no nn nm
+$(P.return [])
+type instance (@@@) (EB ns nr nq) np = In ns nr nq np
+$(P.return [])
+data I (nu :: *) (nt :: TyFun' nu *)
+$(P.return [])
+type instance (@@) (I nw) nv = *
+$(P.return [])
+data Exists (oj :: *) (ok :: TyPi oj (I oj)) (ol :: Nat) (om :: T0 oj ol) :: * where
+  Exists_cons_hd ::
+    forall (nx :: *) (ny :: TyPi nx (I nx)) (nz :: Nat) (oa :: nx) (ob :: T0 nx nz) (oc :: ny @@@ oa). (Sing * nx) ->
+    (Sing (TyPi nx (I nx)) ny) -> (Sing Nat nz) -> (Sing nx oa) -> (Sing (T0 nx nz) ob) -> (Sing (ny @@@ oa) oc) ->
+    Exists nx ny ('S nz) ('Cons0 (ToSing nx) (ToSing oa) (ToSing nz) ob)
+  Exists_cons_tl ::
+    forall (od :: *) (oe :: TyPi od (I od)) (og :: Nat) (oh :: od) (oi :: T0 od og). (Sing * od) -> (Sing (TyPi od (I
+    od)) oe) -> (Sing Nat og) -> (Sing od oh) -> (Sing (T0 od og) oi) -> (Exists od oe og oi) -> Exists od oe ('S og)
+    ('Cons0 (ToSing od) (ToSing oh) (ToSing og) oi)
+$(P.return [])
+data instance Sing (Exists pl pm pn po) pk where
+  SExists_cons_hd ::
+    forall (on :: *) (oo :: TyPi on (I on)) (op :: Nat) (oq :: on) (or :: T0 on op) (os :: oo @@@ oq) (ot :: Sing * on)
+    (ou :: Sing (TyPi on (I on)) oo) (ov :: Sing Nat op) (ow :: Sing on oq) (ox :: Sing (T0 on op) or) (oy :: Sing (oo
+    @@@ oq) os). (Sing * on) -> (Sing (TyPi on (I on)) oo) -> (Sing Nat op) -> (Sing on oq) -> (Sing (T0 on op) or) ->
+    (Sing (oo @@@ oq) os) -> Sing' ('Exists_cons_hd ot ou ov ow ox oy)
+  SExists_cons_tl ::
+    forall (oz :: *) (pa :: TyPi oz (I oz)) (pb :: Nat) (pc :: oz) (pd :: T0 oz pb) (pe :: Sing * oz) (pf :: Sing (TyPi
+    oz (I oz)) pa) (pg :: Sing Nat pb) (ph :: Sing oz pc) (pi :: Sing (T0 oz pb) pd) (pj :: Exists oz pa pb pd). (Sing
+    * oz) -> (Sing (TyPi oz (I oz)) pa) -> (Sing Nat pb) -> (Sing oz pc) -> (Sing (T0 oz pb) pd) -> (Sing (Exists oz pa
+    pb pd) pj) -> Sing' ('Exists_cons_tl pe pf pg ph pi pj)
+$(P.return [])
+data DO (pp :: TyFun' * *)
+$(P.return [])
+data DQ (pr :: *) (pq :: TyFun' (TyPi pr (I pr)) *)
+$(P.return [])
+data DS (pu :: *) (pt :: TyPi pu (I pu)) (ps :: TyFun' Nat *)
+$(P.return [])
+data DU (py :: *) (px :: TyPi py (I py)) (pw :: Nat) (pv :: TyFun' (T0 py pw) *)
+$(P.return [])
+type instance (@@) (DU qc qb qa) pz = *
+$(P.return [])
+type instance (@@) (DS qf qe) qd = TyPi (T0 qf qd) (DU qf qe qd)
+$(P.return [])
+type instance (@@) (DQ qh) qg = TyPi Nat (DS qh qg)
+$(P.return [])
+type instance (@@) DO qi = TyPi (TyPi qi (I qi)) (DQ qi)
+$(P.return [])
+data DN (qj :: TyPi' * DO)
+$(P.return [])
+data DP (ql :: *) (qk :: TyPi' (TyPi ql (I ql)) (DQ ql))
+$(P.return [])
+type instance (@@@) DN qm = DP qm
+$(P.return [])
+data DR (qp :: *) (qo :: TyPi qp (I qp)) (qn :: TyPi' Nat (DS qp qo))
+$(P.return [])
+type instance (@@@) (DP qr) qq = DR qr qq
+$(P.return [])
+data DT (qv :: *) (qu :: TyPi qv (I qv)) (qt :: Nat) (qs :: TyPi' (T0 qv qt) (DU qv qu qt))
+$(P.return [])
+type instance (@@@) (DR qy qx) qw = DT qy qx qw
+$(P.return [])
+type instance (@@@) (DT rc rb ra) qz = Exists rc rb ra qz
+$(P.return [])
+data Forall (rl :: *) (rm :: TyPi rl (I rl)) (rn :: Nat) (ro :: T0 rl rn) :: * where
+  Forall_nil ::
+    forall (rd :: *) (re :: TyPi rd (I rd)). (Sing * rd) -> (Sing (TyPi rd (I rd)) re) -> Forall rd re 'O ('Nil0
+    (ToSing rd))
+  Forall_cons ::
+    forall (rf :: *) (rg :: TyPi rf (I rf)) (rh :: Nat) (ri :: rf) (rj :: T0 rf rh) (rk :: rg @@@ ri). (Sing * rf) ->
+    (Sing (TyPi rf (I rf)) rg) -> (Sing Nat rh) -> (Sing rf ri) -> (Sing (T0 rf rh) rj) -> (Sing (rg @@@ ri) rk) ->
+    (Forall rf rg rh rj) -> Forall rf rg ('S rh) ('Cons0 (ToSing rf) (ToSing ri) (ToSing rh) rj)
+$(P.return [])
+data instance Sing (Forall sh si sj sk) sg where
+  SForall_nil ::
+    forall (rp :: *) (rq :: TyPi rp (I rp)) (rr :: Sing * rp) (rs :: Sing (TyPi rp (I rp)) rq). (Sing * rp) -> (Sing
+    (TyPi rp (I rp)) rq) -> Sing' ('Forall_nil rr rs)
+  SForall_cons ::
+    forall (rt :: *) (ru :: TyPi rt (I rt)) (rv :: Nat) (rw :: rt) (rx :: T0 rt rv) (ry :: ru @@@ rw) (rz :: Sing * rt)
+    (sa :: Sing (TyPi rt (I rt)) ru) (sb :: Sing Nat rv) (sc :: Sing rt rw) (sd :: Sing (T0 rt rv) rx) (se :: Sing (ru
+    @@@ rw) ry) (sf :: Forall rt ru rv rx). (Sing * rt) -> (Sing (TyPi rt (I rt)) ru) -> (Sing Nat rv) -> (Sing rt rw)
+    -> (Sing (T0 rt rv) rx) -> (Sing (ru @@@ rw) ry) -> (Sing (Forall rt ru rv rx) sf) -> Sing' ('Forall_cons rz sa sb
+    sc sd se sf)
+$(P.return [])
+data DG (sl :: TyFun' * *)
+$(P.return [])
+data DI (sn :: *) (sm :: TyFun' (TyPi sn (I sn)) *)
+$(P.return [])
+data DK (sq :: *) (sp :: TyPi sq (I sq)) (so :: TyFun' Nat *)
+$(P.return [])
+data DM (su :: *) (st :: TyPi su (I su)) (ss :: Nat) (sr :: TyFun' (T0 su ss) *)
+$(P.return [])
+type instance (@@) (DM sy sx sw) sv = *
+$(P.return [])
+type instance (@@) (DK tb ta) sz = TyPi (T0 tb sz) (DM tb ta sz)
+$(P.return [])
+type instance (@@) (DI td) tc = TyPi Nat (DK td tc)
+$(P.return [])
+type instance (@@) DG te = TyPi (TyPi te (I te)) (DI te)
+$(P.return [])
+data DF (tf :: TyPi' * DG)
+$(P.return [])
+data DH (th :: *) (tg :: TyPi' (TyPi th (I th)) (DI th))
+$(P.return [])
+type instance (@@@) DF ti = DH ti
+$(P.return [])
+data DJ (tl :: *) (tk :: TyPi tl (I tl)) (tj :: TyPi' Nat (DK tl tk))
+$(P.return [])
+type instance (@@@) (DH tn) tm = DJ tn tm
+$(P.return [])
+data DL (tr :: *) (tq :: TyPi tr (I tr)) (tp :: Nat) (to :: TyPi' (T0 tr tp) (DM tr tq tp))
+$(P.return [])
+type instance (@@@) (DJ tu tt) ts = DL tu tt ts
+$(P.return [])
+type instance (@@@) (DL ty tx tw) tv = Forall ty tx tw tv
+$(P.return [])
+data instance Sing (T0 uj uk) ui where
+  SNil0 ::   forall (tz :: *) (ua :: Sing * tz). (Sing * tz) -> Sing' ('Nil0 ua)
+  SCons0 ::
+    forall (ub :: *) (uc :: ub) (ud :: Nat) (ue :: Sing * ub) (uf :: Sing ub uc) (ug :: Sing Nat ud) (uh :: T0 ub ud).
+    (Sing * ub) -> (Sing ub uc) -> (Sing Nat ud) -> (Sing (T0 ub ud) uh) -> Sing' ('Cons0 ue uf ug uh)
+$(P.return [])
+data DC (ul :: TyFun' * *)
+$(P.return [])
+data DE (un :: *) (um :: TyFun' Nat *)
+$(P.return [])
+type instance (@@) (DE up) uo = *
+$(P.return [])
+type instance (@@) DC uq = TyPi Nat (DE uq)
+$(P.return [])
+data DB (ur :: TyPi' * DC)
+$(P.return [])
+data DD (ut :: *) (us :: TyPi' Nat (DE ut))
+$(P.return [])
+type instance (@@@) DB uu = DD uu
+$(P.return [])
+type instance (@@@) (DD uw) uv = T0 uw uv
+$(P.return [])
+data T (uz :: Nat) :: * where
+  F1 ::   forall (ux :: Nat). (Sing Nat ux) -> T ('S ux)
+  FS ::   forall (uy :: Nat). (Sing Nat uy) -> (T uy) -> T ('S uy)
+$(P.return [])
+data instance Sing (T vg) vf where
+  SF1 ::   forall (va :: Nat) (vb :: Sing Nat va). (Sing Nat va) -> Sing' ('F1 vb)
+  SFS ::   forall (vc :: Nat) (vd :: Sing Nat vc) (ve :: T vc). (Sing Nat vc) -> (Sing (T vc) ve) -> Sing' ('FS vd ve)
+$(P.return [])
+data DA (vh :: TyFun' Nat *)
+$(P.return [])
+type instance (@@) DA vi = *
+$(P.return [])
+data CZ (vj :: TyPi' Nat DA)
+$(P.return [])
+type instance (@@@) CZ vk = T vk
+$(P.return [])
+data Sumor (vr :: *) (vs :: *) :: * where
+  Inleft ::   forall (vl :: *) (vm :: *) (vn :: vl). (Sing * vl) -> (Sing * vm) -> (Sing vl vn) -> Sumor vl vm
+  Inright ::   forall (vo :: *) (vp :: *) (vq :: vp). (Sing * vo) -> (Sing * vp) -> (Sing vp vq) -> Sumor vo vp
+$(P.return [])
+data instance Sing (Sumor wg wh) wf where
   SInleft ::
-    forall (w :: *) (x :: *) (y :: w) (z :: Sing * w) (aa :: Sing * x) (ab :: Sing w y). (Sing * w) -> (Sing * x) ->
-    (Sing w y) -> Sing' ('Inleft z aa ab)
+    forall (vt :: *) (vu :: *) (vv :: vt) (vw :: Sing * vt) (vx :: Sing * vu) (vy :: Sing vt vv). (Sing * vt) -> (Sing
+    * vu) -> (Sing vt vv) -> Sing' ('Inleft vw vx vy)
   SInright ::
-    forall (ac :: *) (ad :: *) (ae :: ad) (af :: Sing * ac) (ag :: Sing * ad) (ah :: Sing ad ae). (Sing * ac) -> (Sing
-    * ad) -> (Sing ad ae) -> Sing' ('Inright af ag ah)
+    forall (vz :: *) (wa :: *) (wb :: wa) (wc :: Sing * vz) (wd :: Sing * wa) (we :: Sing wa wb). (Sing * vz) -> (Sing
+    * wa) -> (Sing wa wb) -> Sing' ('Inright wc wd we)
 $(P.return [])
-data CS (al :: TyFun' * *)
+data CW (wi :: TyFun' * *)
 $(P.return [])
-data CU (an :: *) (am :: TyFun' * *)
+data CY (wk :: *) (wj :: TyFun' * *)
 $(P.return [])
-type instance (@@) (CU ap) ao = *
+type instance (@@) (CY wm) wl = *
 $(P.return [])
-type instance (@@) CS aq = TyPi * (CU aq)
+type instance (@@) CW wn = TyPi * (CY wn)
 $(P.return [])
-data CR (ar :: TyPi' * CS)
+data CV (wo :: TyPi' * CW)
 $(P.return [])
-data CT (at :: *) (as :: TyPi' * (CU at))
+data CX (wq :: *) (wp :: TyPi' * (CY wq))
 $(P.return [])
-type instance (@@@) CR au = CT au
+type instance (@@@) CV wr = CX wr
 $(P.return [])
-type instance (@@@) (CT aw) av = Sumor aw av
+type instance (@@@) (CX wt) ws = Sumor wt ws
 $(P.return [])
-data Sumbool (bd :: *) (be :: *) :: * where
-  Left ::   forall (ax :: *) (ay :: *) (az :: ax). (Sing * ax) -> (Sing * ay) -> (Sing ax az) -> Sumbool ax ay
-  Right ::   forall (ba :: *) (bb :: *) (bc :: bb). (Sing * ba) -> (Sing * bb) -> (Sing bb bc) -> Sumbool ba bb
-data instance Sing (Sumbool bs bt) br where
+data Sumbool (xa :: *) (xb :: *) :: * where
+  Left ::   forall (wu :: *) (wv :: *) (ww :: wu). (Sing * wu) -> (Sing * wv) -> (Sing wu ww) -> Sumbool wu wv
+  Right ::   forall (wx :: *) (wy :: *) (wz :: wy). (Sing * wx) -> (Sing * wy) -> (Sing wy wz) -> Sumbool wx wy
+$(P.return [])
+data instance Sing (Sumbool xp xq) xo where
   SLeft ::
-    forall (bf :: *) (bg :: *) (bh :: bf) (bi :: Sing * bf) (bj :: Sing * bg) (bk :: Sing bf bh). (Sing * bf) -> (Sing
-    * bg) -> (Sing bf bh) -> Sing' ('Left bi bj bk)
+    forall (xc :: *) (xd :: *) (xe :: xc) (xf :: Sing * xc) (xg :: Sing * xd) (xh :: Sing xc xe). (Sing * xc) -> (Sing
+    * xd) -> (Sing xc xe) -> Sing' ('Left xf xg xh)
   SRight ::
-    forall (bl :: *) (bm :: *) (bn :: bm) (bo :: Sing * bl) (bp :: Sing * bm) (bq :: Sing bm bn). (Sing * bl) -> (Sing
-    * bm) -> (Sing bm bn) -> Sing' ('Right bo bp bq)
+    forall (xi :: *) (xj :: *) (xk :: xj) (xl :: Sing * xi) (xm :: Sing * xj) (xn :: Sing xj xk). (Sing * xi) -> (Sing
+    * xj) -> (Sing xj xk) -> Sing' ('Right xl xm xn)
 $(P.return [])
-data CO (bu :: TyFun' * *)
+data CS (xr :: TyFun' * *)
 $(P.return [])
-data CQ (bw :: *) (bv :: TyFun' * *)
+data CU (xt :: *) (xs :: TyFun' * *)
 $(P.return [])
-type instance (@@) (CQ by) bx = *
+type instance (@@) (CU xv) xu = *
 $(P.return [])
-type instance (@@) CO bz = TyPi * (CQ bz)
+type instance (@@) CS xw = TyPi * (CU xw)
 $(P.return [])
-data CN (ca :: TyPi' * CO)
+data CR (xx :: TyPi' * CS)
 $(P.return [])
-data CP (cc :: *) (cb :: TyPi' * (CQ cc))
+data CT (xz :: *) (xy :: TyPi' * (CU xz))
 $(P.return [])
-type instance (@@@) CN cd = CP cd
+type instance (@@@) CR ya = CT ya
 $(P.return [])
-type instance (@@@) (CP cf) ce = Sumbool cf ce
+type instance (@@@) (CT yc) yb = Sumbool yc yb
 $(P.return [])
-data I (ch :: *) (cg :: TyFun' ch *)
+data N (yf :: *) (ye :: TyPi yf (I yf)) (yd :: TyFun' yf *)
 $(P.return [])
-type instance (@@) (I cj) ci = *
+type instance (@@) (N yi yh) yg = *
 $(P.return [])
-data N (cm :: *) (cl :: TyPi cm (I cm)) (ck :: TyFun' cm *)
-$(P.return [])
-type instance (@@) (N cp co) cn = *
-$(P.return [])
-data SigT2 (cw :: *) (cx :: TyPi cw (I cw)) (cy :: TyPi cw (N cw cx)) :: * where
+data SigT2 (yp :: *) (yq :: TyPi yp (I yp)) (yr :: TyPi yp (N yp yq)) :: * where
   ExistT2 ::
-    forall (cq :: *) (cr :: TyPi cq (I cq)) (cs :: TyPi cq (N cq cr)) (ct :: cq) (cu :: cr @@@ ct) (cv :: cs @@@ ct).
-    (Sing * cq) -> (Sing (TyPi cq (I cq)) cr) -> (Sing (TyPi cq (N cq cr)) cs) -> (Sing cq ct) -> (Sing (cr @@@ ct) cu)
-    -> (Sing (cs @@@ ct) cv) -> SigT2 cq cr cs
-data instance Sing (SigT2 dm dn dp) dl where
+    forall (yj :: *) (yk :: TyPi yj (I yj)) (yl :: TyPi yj (N yj yk)) (ym :: yj) (yn :: yk @@@ ym) (yo :: yl @@@ ym).
+    (Sing * yj) -> (Sing (TyPi yj (I yj)) yk) -> (Sing (TyPi yj (N yj yk)) yl) -> (Sing yj ym) -> (Sing (yk @@@ ym) yn)
+    -> (Sing (yl @@@ ym) yo) -> SigT2 yj yk yl
+$(P.return [])
+data instance Sing (SigT2 zf zg zh) ze where
   SExistT2 ::
-    forall (cz :: *) (da :: TyPi cz (I cz)) (db :: TyPi cz (N cz da)) (dc :: cz) (dd :: da @@@ dc) (de :: db @@@ dc)
-    (df :: Sing * cz) (dg :: Sing (TyPi cz (I cz)) da) (dh :: Sing (TyPi cz (N cz da)) db) (di :: Sing cz dc) (dj ::
-    Sing (da @@@ dc) dd) (dk :: Sing (db @@@ dc) de). (Sing * cz) -> (Sing (TyPi cz (I cz)) da) -> (Sing (TyPi cz (N cz
-    da)) db) -> (Sing cz dc) -> (Sing (da @@@ dc) dd) -> (Sing (db @@@ dc) de) -> Sing' ('ExistT2 df dg dh di dj dk)
+    forall (ys :: *) (yt :: TyPi ys (I ys)) (yu :: TyPi ys (N ys yt)) (yv :: ys) (yw :: yt @@@ yv) (yx :: yu @@@ yv)
+    (yy :: Sing * ys) (yz :: Sing (TyPi ys (I ys)) yt) (za :: Sing (TyPi ys (N ys yt)) yu) (zb :: Sing ys yv) (zc ::
+    Sing (yt @@@ yv) yw) (zd :: Sing (yu @@@ yv) yx). (Sing * ys) -> (Sing (TyPi ys (I ys)) yt) -> (Sing (TyPi ys (N ys
+    yt)) yu) -> (Sing ys yv) -> (Sing (yt @@@ yv) yw) -> (Sing (yu @@@ yv) yx) -> Sing' ('ExistT2 yy yz za zb zc zd)
 $(P.return [])
-data CI (dq :: TyFun' * *)
+data CM (zi :: TyFun' * *)
 $(P.return [])
-data CK (ds :: *) (dr :: TyFun' (TyPi ds (I ds)) *)
+data CO (zk :: *) (zj :: TyFun' (TyPi zk (I zk)) *)
 $(P.return [])
-data CM (dv :: *) (du :: TyPi dv (I dv)) (dt :: TyFun' (TyPi dv (N dv du)) *)
+data CQ (zn :: *) (zm :: TyPi zn (I zn)) (zl :: TyFun' (TyPi zn (N zn zm)) *)
 $(P.return [])
-type instance (@@) (CM dy dx) dw = *
+type instance (@@) (CQ zq zp) zo = *
 $(P.return [])
-type instance (@@) (CK ea) dz = TyPi (TyPi ea (N ea dz)) (CM ea dz)
+type instance (@@) (CO zs) zr = TyPi (TyPi zs (N zs zr)) (CQ zs zr)
 $(P.return [])
-type instance (@@) CI eb = TyPi (TyPi eb (I eb)) (CK eb)
+type instance (@@) CM zt = TyPi (TyPi zt (I zt)) (CO zt)
 $(P.return [])
-data CH (ec :: TyPi' * CI)
+data CL (zu :: TyPi' * CM)
 $(P.return [])
-data CJ (ee :: *) (ed :: TyPi' (TyPi ee (I ee)) (CK ee))
+data CN (zw :: *) (zv :: TyPi' (TyPi zw (I zw)) (CO zw))
 $(P.return [])
-type instance (@@@) CH ef = CJ ef
+type instance (@@@) CL zx = CN zx
 $(P.return [])
-data CL (ei :: *) (eh :: TyPi ei (I ei)) (eg :: TyPi' (TyPi ei (N ei eh)) (CM ei eh))
+data CP (aaa :: *) (zz :: TyPi aaa (I aaa)) (zy :: TyPi' (TyPi aaa (N aaa zz)) (CQ aaa zz))
 $(P.return [])
-type instance (@@@) (CJ ek) ej = CL ek ej
+type instance (@@@) (CN aac) aab = CP aac aab
 $(P.return [])
-type instance (@@@) (CL en em) el = SigT2 en em el
+type instance (@@@) (CP aaf aae) aad = SigT2 aaf aae aad
 $(P.return [])
-data SigT (es :: *) (et :: TyPi es (I es)) :: * where
+data SigT (aak :: *) (aal :: TyPi aak (I aak)) :: * where
   ExistT ::
-    forall (eo :: *) (ep :: TyPi eo (I eo)) (eq :: eo) (er :: ep @@@ eq). (Sing * eo) -> (Sing (TyPi eo (I eo)) ep) ->
-    (Sing eo eq) -> (Sing (ep @@@ eq) er) -> SigT eo ep
-data instance Sing (SigT fd fe) fc where
+    forall (aag :: *) (aah :: TyPi aag (I aag)) (aai :: aag) (aaj :: aah @@@ aai). (Sing * aag) -> (Sing (TyPi aag (I
+    aag)) aah) -> (Sing aag aai) -> (Sing (aah @@@ aai) aaj) -> SigT aag aah
+$(P.return [])
+data instance Sing (SigT aav aaw) aau where
   SExistT ::
-    forall (eu :: *) (ev :: TyPi eu (I eu)) (ew :: eu) (ex :: ev @@@ ew) (ey :: Sing * eu) (ez :: Sing (TyPi eu (I eu))
-    ev) (fa :: Sing eu ew) (fb :: Sing (ev @@@ ew) ex). (Sing * eu) -> (Sing (TyPi eu (I eu)) ev) -> (Sing eu ew) ->
-    (Sing (ev @@@ ew) ex) -> Sing' ('ExistT ey ez fa fb)
+    forall (aam :: *) (aan :: TyPi aam (I aam)) (aao :: aam) (aap :: aan @@@ aao) (aaq :: Sing * aam) (aar :: Sing
+    (TyPi aam (I aam)) aan) (aas :: Sing aam aao) (aat :: Sing (aan @@@ aao) aap). (Sing * aam) -> (Sing (TyPi aam (I
+    aam)) aan) -> (Sing aam aao) -> (Sing (aan @@@ aao) aap) -> Sing' ('ExistT aaq aar aas aat)
 $(P.return [])
-data CE (ff :: TyFun' * *)
+data CI (aax :: TyFun' * *)
 $(P.return [])
-data CG (fh :: *) (fg :: TyFun' (TyPi fh (I fh)) *)
+data CK (aaz :: *) (aay :: TyFun' (TyPi aaz (I aaz)) *)
 $(P.return [])
-type instance (@@) (CG fj) fi = *
+type instance (@@) (CK abb) aba = *
 $(P.return [])
-type instance (@@) CE fk = TyPi (TyPi fk (I fk)) (CG fk)
+type instance (@@) CI abc = TyPi (TyPi abc (I abc)) (CK abc)
 $(P.return [])
-data CD (fl :: TyPi' * CE)
+data CH (abd :: TyPi' * CI)
 $(P.return [])
-data CF (fn :: *) (fm :: TyPi' (TyPi fn (I fn)) (CG fn))
+data CJ (abf :: *) (abe :: TyPi' (TyPi abf (I abf)) (CK abf))
 $(P.return [])
-type instance (@@@) CD fo = CF fo
+type instance (@@@) CH abg = CJ abg
 $(P.return [])
-type instance (@@@) (CF fq) fp = SigT fq fp
+type instance (@@@) (CJ abi) abh = SigT abi abh
 $(P.return [])
-data Sig2 (fx :: *) (fy :: TyPi fx (I fx)) (fz :: TyPi fx (N fx fy)) :: * where
+data Sig2 (abp :: *) (abq :: TyPi abp (I abp)) (abr :: TyPi abp (N abp abq)) :: * where
   Exist2 ::
-    forall (fr :: *) (fs :: TyPi fr (I fr)) (ft :: TyPi fr (N fr fs)) (fu :: fr) (fv :: fs @@@ fu) (fw :: ft @@@ fu).
-    (Sing * fr) -> (Sing (TyPi fr (I fr)) fs) -> (Sing (TyPi fr (N fr fs)) ft) -> (Sing fr fu) -> (Sing (fs @@@ fu) fv)
-    -> (Sing (ft @@@ fu) fw) -> Sig2 fr fs ft
-data instance Sing (Sig2 gn go gp) gm where
+    forall (abj :: *) (abk :: TyPi abj (I abj)) (abl :: TyPi abj (N abj abk)) (abm :: abj) (abn :: abk @@@ abm) (abo ::
+    abl @@@ abm). (Sing * abj) -> (Sing (TyPi abj (I abj)) abk) -> (Sing (TyPi abj (N abj abk)) abl) -> (Sing abj abm)
+    -> (Sing (abk @@@ abm) abn) -> (Sing (abl @@@ abm) abo) -> Sig2 abj abk abl
+$(P.return [])
+data instance Sing (Sig2 acf acg ach) ace where
   SExist2 ::
-    forall (ga :: *) (gb :: TyPi ga (I ga)) (gc :: TyPi ga (N ga gb)) (gd :: ga) (ge :: gb @@@ gd) (gf :: gc @@@ gd)
-    (gg :: Sing * ga) (gh :: Sing (TyPi ga (I ga)) gb) (gi :: Sing (TyPi ga (N ga gb)) gc) (gj :: Sing ga gd) (gk ::
-    Sing (gb @@@ gd) ge) (gl :: Sing (gc @@@ gd) gf). (Sing * ga) -> (Sing (TyPi ga (I ga)) gb) -> (Sing (TyPi ga (N ga
-    gb)) gc) -> (Sing ga gd) -> (Sing (gb @@@ gd) ge) -> (Sing (gc @@@ gd) gf) -> Sing' ('Exist2 gg gh gi gj gk gl)
+    forall (abs :: *) (abt :: TyPi abs (I abs)) (abu :: TyPi abs (N abs abt)) (abv :: abs) (abw :: abt @@@ abv) (abx ::
+    abu @@@ abv) (aby :: Sing * abs) (abz :: Sing (TyPi abs (I abs)) abt) (aca :: Sing (TyPi abs (N abs abt)) abu) (acb
+    :: Sing abs abv) (acc :: Sing (abt @@@ abv) abw) (acd :: Sing (abu @@@ abv) abx). (Sing * abs) -> (Sing (TyPi abs
+    (I abs)) abt) -> (Sing (TyPi abs (N abs abt)) abu) -> (Sing abs abv) -> (Sing (abt @@@ abv) abw) -> (Sing (abu @@@
+    abv) abx) -> Sing' ('Exist2 aby abz aca acb acc acd)
 $(P.return [])
-data BY (gq :: TyFun' * *)
+data CC (aci :: TyFun' * *)
 $(P.return [])
-data CA (gs :: *) (gr :: TyFun' (TyPi gs (I gs)) *)
+data CE (ack :: *) (acj :: TyFun' (TyPi ack (I ack)) *)
 $(P.return [])
-data CC (gv :: *) (gu :: TyPi gv (I gv)) (gt :: TyFun' (TyPi gv (N gv gu)) *)
+data CG (acn :: *) (acm :: TyPi acn (I acn)) (acl :: TyFun' (TyPi acn (N acn acm)) *)
 $(P.return [])
-type instance (@@) (CC gy gx) gw = *
+type instance (@@) (CG acq acp) aco = *
 $(P.return [])
-type instance (@@) (CA ha) gz = TyPi (TyPi ha (N ha gz)) (CC ha gz)
+type instance (@@) (CE acs) acr = TyPi (TyPi acs (N acs acr)) (CG acs acr)
 $(P.return [])
-type instance (@@) BY hb = TyPi (TyPi hb (I hb)) (CA hb)
+type instance (@@) CC act = TyPi (TyPi act (I act)) (CE act)
 $(P.return [])
-data BX (hc :: TyPi' * BY)
+data CB (acu :: TyPi' * CC)
 $(P.return [])
-data BZ (he :: *) (hd :: TyPi' (TyPi he (I he)) (CA he))
+data CD (acw :: *) (acv :: TyPi' (TyPi acw (I acw)) (CE acw))
 $(P.return [])
-type instance (@@@) BX hf = BZ hf
+type instance (@@@) CB acx = CD acx
 $(P.return [])
-data CB (hi :: *) (hh :: TyPi hi (I hi)) (hg :: TyPi' (TyPi hi (N hi hh)) (CC hi hh))
+data CF (ada :: *) (acz :: TyPi ada (I ada)) (acy :: TyPi' (TyPi ada (N ada acz)) (CG ada acz))
 $(P.return [])
-type instance (@@@) (BZ hk) hj = CB hk hj
+type instance (@@@) (CD adc) adb = CF adc adb
 $(P.return [])
-type instance (@@@) (CB hn hm) hl = Sig2 hn hm hl
+type instance (@@@) (CF adf ade) add = Sig2 adf ade add
 $(P.return [])
-data Sig (hs :: *) (ht :: TyPi hs (I hs)) :: * where
+data Sig (adk :: *) (adl :: TyPi adk (I adk)) :: * where
   Exist ::
-    forall (ho :: *) (hp :: TyPi ho (I ho)) (hq :: ho) (hr :: hp @@@ hq). (Sing * ho) -> (Sing (TyPi ho (I ho)) hp) ->
-    (Sing ho hq) -> (Sing (hp @@@ hq) hr) -> Sig ho hp
-data instance Sing (Sig id ie) ic where
+    forall (adg :: *) (adh :: TyPi adg (I adg)) (adi :: adg) (adj :: adh @@@ adi). (Sing * adg) -> (Sing (TyPi adg (I
+    adg)) adh) -> (Sing adg adi) -> (Sing (adh @@@ adi) adj) -> Sig adg adh
+$(P.return [])
+data instance Sing (Sig adv adw) adu where
   SExist ::
-    forall (hu :: *) (hv :: TyPi hu (I hu)) (hw :: hu) (hx :: hv @@@ hw) (hy :: Sing * hu) (hz :: Sing (TyPi hu (I hu))
-    hv) (ia :: Sing hu hw) (ib :: Sing (hv @@@ hw) hx). (Sing * hu) -> (Sing (TyPi hu (I hu)) hv) -> (Sing hu hw) ->
-    (Sing (hv @@@ hw) hx) -> Sing' ('Exist hy hz ia ib)
+    forall (adm :: *) (adn :: TyPi adm (I adm)) (ado :: adm) (adp :: adn @@@ ado) (adq :: Sing * adm) (adr :: Sing
+    (TyPi adm (I adm)) adn) (ads :: Sing adm ado) (adt :: Sing (adn @@@ ado) adp). (Sing * adm) -> (Sing (TyPi adm (I
+    adm)) adn) -> (Sing adm ado) -> (Sing (adn @@@ ado) adp) -> Sing' ('Exist adq adr ads adt)
 $(P.return [])
-data BU (ig :: TyFun' * *)
+data BY (adx :: TyFun' * *)
 $(P.return [])
-data BW (ii :: *) (ih :: TyFun' (TyPi ii (I ii)) *)
+data CA (adz :: *) (ady :: TyFun' (TyPi adz (I adz)) *)
 $(P.return [])
-type instance (@@) (BW ik) ij = *
+type instance (@@) (CA aeb) aea = *
 $(P.return [])
-type instance (@@) BU il = TyPi (TyPi il (I il)) (BW il)
+type instance (@@) BY aec = TyPi (TyPi aec (I aec)) (CA aec)
 $(P.return [])
-data BT (im :: TyPi' * BU)
+data BX (aed :: TyPi' * BY)
 $(P.return [])
-data BV (ip :: *) (io :: TyPi' (TyPi ip (I ip)) (BW ip))
+data BZ (aef :: *) (aee :: TyPi' (TyPi aef (I aef)) (CA aef))
 $(P.return [])
-type instance (@@@) BT iq = BV iq
+type instance (@@@) BX aeg = BZ aeg
 $(P.return [])
-type instance (@@@) (BV is) ir = Sig is ir
+type instance (@@@) (BZ aei) aeh = Sig aei aeh
 $(P.return [])
-data Identity (iv :: *) (iw :: iv) (ix :: iv) :: * where
-  Identity_refl ::   forall (it :: *) (iu :: it). (Sing * it) -> (Sing it iu) -> Identity it iu iu
-data instance Sing (Identity jd je jf) jc where
+data Le (aem :: Nat) (aen :: Nat) :: * where
+  Le_n ::   forall (aej :: Nat). (Sing Nat aej) -> Le aej aej
+  Le_S ::   forall (aek :: Nat) (ael :: Nat). (Sing Nat aek) -> (Sing Nat ael) -> (Le aek ael) -> Le aek ('S ael)
+$(P.return [])
+data instance Sing (Le aew aex) aev where
+  SLe_n ::   forall (aeo :: Nat) (aep :: Sing Nat aeo). (Sing Nat aeo) -> Sing' ('Le_n aep)
+  SLe_S ::
+    forall (aeq :: Nat) (aer :: Nat) (aes :: Sing Nat aeq) (aet :: Sing Nat aer) (aeu :: Le aeq aer). (Sing Nat aeq) ->
+    (Sing Nat aer) -> (Sing (Le aeq aer) aeu) -> Sing' ('Le_S aes aet aeu)
+$(P.return [])
+data BU (aey :: TyFun' Nat *)
+$(P.return [])
+data BW (afa :: Nat) (aez :: TyFun' Nat *)
+$(P.return [])
+type instance (@@) (BW afc) afb = *
+$(P.return [])
+type instance (@@) BU afd = TyPi Nat (BW afd)
+$(P.return [])
+data BT (afe :: TyPi' Nat BU)
+$(P.return [])
+data BV (afg :: Nat) (aff :: TyPi' Nat (BW afg))
+$(P.return [])
+type instance (@@@) BT afh = BV afh
+$(P.return [])
+type instance (@@@) (BV afj) afi = Le afj afi
+$(P.return [])
+data Identity (afm :: *) (afn :: afm) (afo :: afm) :: * where
+  Identity_refl ::   forall (afk :: *) (afl :: afk). (Sing * afk) -> (Sing afk afl) -> Identity afk afl afl
+$(P.return [])
+data instance Sing (Identity afu afv afw) aft where
   SIdentity_refl ::
-    forall (iy :: *) (iz :: iy) (ja :: Sing * iy) (jb :: Sing iy iz). (Sing * iy) -> (Sing iy iz) -> Sing'
-    ('Identity_refl ja jb)
+    forall (afp :: *) (afq :: afp) (afr :: Sing * afp) (afs :: Sing afp afq). (Sing * afp) -> (Sing afp afq) -> Sing'
+    ('Identity_refl afr afs)
 $(P.return [])
-data BO (jg :: TyFun' * *)
+data BO (afx :: TyFun' * *)
 $(P.return [])
-data BQ (ji :: *) (jh :: TyFun' ji *)
+data BQ (afz :: *) (afy :: TyFun' afz *)
 $(P.return [])
-data BS (jl :: *) (jk :: jl) (jj :: TyFun' jl *)
+data BS (agc :: *) (agb :: agc) (aga :: TyFun' agc *)
 $(P.return [])
-type instance (@@) (BS jo jn) jm = *
+type instance (@@) (BS agf age) agd = *
 $(P.return [])
-type instance (@@) (BQ jq) jp = TyPi jq (BS jq jp)
+type instance (@@) (BQ agh) agg = TyPi agh (BS agh agg)
 $(P.return [])
-type instance (@@) BO jr = TyPi jr (BQ jr)
+type instance (@@) BO agi = TyPi agi (BQ agi)
 $(P.return [])
-data BN (js :: TyPi' * BO)
+data BN (agj :: TyPi' * BO)
 $(P.return [])
-data BP (ju :: *) (jt :: TyPi' ju (BQ ju))
+data BP (agl :: *) (agk :: TyPi' agl (BQ agl))
 $(P.return [])
-type instance (@@@) BN jv = BP jv
+type instance (@@@) BN agm = BP agm
 $(P.return [])
-data BR (jy :: *) (jx :: jy) (jw :: TyPi' jy (BS jy jx))
+data BR (agp :: *) (ago :: agp) (agn :: TyPi' agp (BS agp ago))
 $(P.return [])
-type instance (@@@) (BP ka) jz = BR ka jz
+type instance (@@@) (BP agr) agq = BR agr agq
 $(P.return [])
-type instance (@@@) (BR kd kc) kb = Identity kd kc kb
+type instance (@@@) (BR agu agt) ags = Identity agu agt ags
 $(P.return [])
 data Comparison :: * where
   Eq ::   Comparison
   Lt ::   Comparison
   Gt ::   Comparison
-data CompareSpecT (kq :: *) (kr :: *) (ks :: *) (kt :: Comparison) :: * where
+$(P.return [])
+data CompareSpecT (ahh :: *) (ahi :: *) (ahj :: *) (ahk :: Comparison) :: * where
   CompEqT ::
-    forall (ke :: *) (kf :: *) (kg :: *) (kh :: ke). (Sing * ke) -> (Sing * kf) -> (Sing * kg) -> (Sing ke kh) ->
-    CompareSpecT ke kf kg 'Eq
+    forall (agv :: *) (agw :: *) (agx :: *) (agy :: agv). (Sing * agv) -> (Sing * agw) -> (Sing * agx) -> (Sing agv
+    agy) -> CompareSpecT agv agw agx 'Eq
   CompLtT ::
-    forall (ki :: *) (kj :: *) (kk :: *) (kl :: kj). (Sing * ki) -> (Sing * kj) -> (Sing * kk) -> (Sing kj kl) ->
-    CompareSpecT ki kj kk 'Lt
+    forall (agz :: *) (aha :: *) (ahb :: *) (ahc :: aha). (Sing * agz) -> (Sing * aha) -> (Sing * ahb) -> (Sing aha
+    ahc) -> CompareSpecT agz aha ahb 'Lt
   CompGtT ::
-    forall (km :: *) (kn :: *) (ko :: *) (kp :: ko). (Sing * km) -> (Sing * kn) -> (Sing * ko) -> (Sing ko kp) ->
-    CompareSpecT km kn ko 'Gt
-data instance Sing (CompareSpecT lt lu lv lw) ls where
+    forall (ahd :: *) (ahe :: *) (ahf :: *) (ahg :: ahf). (Sing * ahd) -> (Sing * ahe) -> (Sing * ahf) -> (Sing ahf
+    ahg) -> CompareSpecT ahd ahe ahf 'Gt
+$(P.return [])
+data instance Sing (CompareSpecT aik ail aim ain) aij where
   SCompEqT ::
-    forall (ku :: *) (kv :: *) (kw :: *) (kx :: ku) (ky :: Sing * ku) (kz :: Sing * kv) (la :: Sing * kw) (lb :: Sing
-    ku kx). (Sing * ku) -> (Sing * kv) -> (Sing * kw) -> (Sing ku kx) -> Sing' ('CompEqT ky kz la lb)
+    forall (ahl :: *) (ahm :: *) (ahn :: *) (aho :: ahl) (ahp :: Sing * ahl) (ahq :: Sing * ahm) (ahr :: Sing * ahn)
+    (ahs :: Sing ahl aho). (Sing * ahl) -> (Sing * ahm) -> (Sing * ahn) -> (Sing ahl aho) -> Sing' ('CompEqT ahp ahq
+    ahr ahs)
   SCompLtT ::
-    forall (lc :: *) (ld :: *) (le :: *) (lf :: ld) (lg :: Sing * lc) (lh :: Sing * ld) (li :: Sing * le) (lj :: Sing
-    ld lf). (Sing * lc) -> (Sing * ld) -> (Sing * le) -> (Sing ld lf) -> Sing' ('CompLtT lg lh li lj)
+    forall (aht :: *) (ahu :: *) (ahv :: *) (ahw :: ahu) (ahx :: Sing * aht) (ahy :: Sing * ahu) (ahz :: Sing * ahv)
+    (aia :: Sing ahu ahw). (Sing * aht) -> (Sing * ahu) -> (Sing * ahv) -> (Sing ahu ahw) -> Sing' ('CompLtT ahx ahy
+    ahz aia)
   SCompGtT ::
-    forall (lk :: *) (ll :: *) (lm :: *) (ln :: lm) (lo :: Sing * lk) (lp :: Sing * ll) (lq :: Sing * lm) (lr :: Sing
-    lm ln). (Sing * lk) -> (Sing * ll) -> (Sing * lm) -> (Sing lm ln) -> Sing' ('CompGtT lo lp lq lr)
+    forall (aib :: *) (aic :: *) (aid :: *) (aie :: aid) (aif :: Sing * aib) (aig :: Sing * aic) (aih :: Sing * aid)
+    (aii :: Sing aid aie). (Sing * aib) -> (Sing * aic) -> (Sing * aid) -> (Sing aid aie) -> Sing' ('CompGtT aif aig
+    aih aii)
 $(P.return [])
-data BG (lx :: TyFun' * *)
+data BG (aio :: TyFun' * *)
 $(P.return [])
-data BI (lz :: *) (ly :: TyFun' * *)
+data BI (aiq :: *) (aip :: TyFun' * *)
 $(P.return [])
-data BK (mc :: *) (mb :: *) (ma :: TyFun' * *)
+data BK (ait :: *) (ais :: *) (air :: TyFun' * *)
 $(P.return [])
-data BM (mg :: *) (mf :: *) (me :: *) (md :: TyFun' Comparison *)
+data BM (aix :: *) (aiw :: *) (aiv :: *) (aiu :: TyFun' Comparison *)
 $(P.return [])
-type instance (@@) (BM mk mj mi) mh = *
+type instance (@@) (BM ajb aja aiz) aiy = *
 $(P.return [])
-type instance (@@) (BK mn mm) ml = TyPi Comparison (BM mn mm ml)
+type instance (@@) (BK aje ajd) ajc = TyPi Comparison (BM aje ajd ajc)
 $(P.return [])
-type instance (@@) (BI mp) mo = TyPi * (BK mp mo)
+type instance (@@) (BI ajg) ajf = TyPi * (BK ajg ajf)
 $(P.return [])
-type instance (@@) BG mq = TyPi * (BI mq)
+type instance (@@) BG ajh = TyPi * (BI ajh)
 $(P.return [])
-data BF (mr :: TyPi' * BG)
+data BF (aji :: TyPi' * BG)
 $(P.return [])
-data BH (mt :: *) (ms :: TyPi' * (BI mt))
+data BH (ajk :: *) (ajj :: TyPi' * (BI ajk))
 $(P.return [])
-type instance (@@@) BF mu = BH mu
+type instance (@@@) BF ajl = BH ajl
 $(P.return [])
-data BJ (mx :: *) (mw :: *) (mv :: TyPi' * (BK mx mw))
+data BJ (ajo :: *) (ajn :: *) (ajm :: TyPi' * (BK ajo ajn))
 $(P.return [])
-type instance (@@@) (BH mz) my = BJ mz my
+type instance (@@@) (BH ajq) ajp = BJ ajq ajp
 $(P.return [])
-data BL (nd :: *) (nc :: *) (nb :: *) (na :: TyPi' Comparison (BM nd nc nb))
+data BL (aju :: *) (ajt :: *) (ajs :: *) (ajr :: TyPi' Comparison (BM aju ajt ajs))
 $(P.return [])
-type instance (@@@) (BJ ng nf) ne = BL ng nf ne
+type instance (@@@) (BJ ajx ajw) ajv = BL ajx ajw ajv
 $(P.return [])
-type instance (@@@) (BL nk nj ni) nh = CompareSpecT nk nj ni nh
+type instance (@@@) (BL akb aka ajz) ajy = CompareSpecT akb aka ajz ajy
 $(P.return [])
-data CompareSpec (nx :: *) (ny :: *) (nz :: *) (oa :: Comparison) :: * where
+data CompareSpec (ako :: *) (akp :: *) (akq :: *) (akr :: Comparison) :: * where
   CompEq ::
-    forall (nl :: *) (nm :: *) (nn :: *) (no :: nl). (Sing * nl) -> (Sing * nm) -> (Sing * nn) -> (Sing nl no) ->
-    CompareSpec nl nm nn 'Eq
+    forall (akc :: *) (akd :: *) (ake :: *) (akf :: akc). (Sing * akc) -> (Sing * akd) -> (Sing * ake) -> (Sing akc
+    akf) -> CompareSpec akc akd ake 'Eq
   CompLt ::
-    forall (np :: *) (nq :: *) (nr :: *) (ns :: nq). (Sing * np) -> (Sing * nq) -> (Sing * nr) -> (Sing nq ns) ->
-    CompareSpec np nq nr 'Lt
+    forall (akg :: *) (akh :: *) (aki :: *) (akj :: akh). (Sing * akg) -> (Sing * akh) -> (Sing * aki) -> (Sing akh
+    akj) -> CompareSpec akg akh aki 'Lt
   CompGt ::
-    forall (nt :: *) (nu :: *) (nv :: *) (nw :: nv). (Sing * nt) -> (Sing * nu) -> (Sing * nv) -> (Sing nv nw) ->
-    CompareSpec nt nu nv 'Gt
-data instance Sing (CompareSpec pb pc pd pe) pa where
+    forall (akk :: *) (akl :: *) (akm :: *) (akn :: akm). (Sing * akk) -> (Sing * akl) -> (Sing * akm) -> (Sing akm
+    akn) -> CompareSpec akk akl akm 'Gt
+$(P.return [])
+data instance Sing (CompareSpec alr als alt alu) alq where
   SCompEq ::
-    forall (ob :: *) (oc :: *) (od :: *) (oe :: ob) (og :: Sing * ob) (oh :: Sing * oc) (oi :: Sing * od) (oj :: Sing
-    ob oe). (Sing * ob) -> (Sing * oc) -> (Sing * od) -> (Sing ob oe) -> Sing' ('CompEq og oh oi oj)
+    forall (aks :: *) (akt :: *) (aku :: *) (akv :: aks) (akw :: Sing * aks) (akx :: Sing * akt) (aky :: Sing * aku)
+    (akz :: Sing aks akv). (Sing * aks) -> (Sing * akt) -> (Sing * aku) -> (Sing aks akv) -> Sing' ('CompEq akw akx aky
+    akz)
   SCompLt ::
-    forall (ok :: *) (ol :: *) (om :: *) (on :: ol) (oo :: Sing * ok) (op :: Sing * ol) (oq :: Sing * om) (or :: Sing
-    ol on). (Sing * ok) -> (Sing * ol) -> (Sing * om) -> (Sing ol on) -> Sing' ('CompLt oo op oq or)
+    forall (ala :: *) (alb :: *) (alc :: *) (ald :: alb) (ale :: Sing * ala) (alf :: Sing * alb) (alg :: Sing * alc)
+    (alh :: Sing alb ald). (Sing * ala) -> (Sing * alb) -> (Sing * alc) -> (Sing alb ald) -> Sing' ('CompLt ale alf alg
+    alh)
   SCompGt ::
-    forall (os :: *) (ot :: *) (ou :: *) (ov :: ou) (ow :: Sing * os) (ox :: Sing * ot) (oy :: Sing * ou) (oz :: Sing
-    ou ov). (Sing * os) -> (Sing * ot) -> (Sing * ou) -> (Sing ou ov) -> Sing' ('CompGt ow ox oy oz)
+    forall (ali :: *) (alj :: *) (alk :: *) (all :: alk) (alm :: Sing * ali) (aln :: Sing * alj) (alo :: Sing * alk)
+    (alp :: Sing alk all). (Sing * ali) -> (Sing * alj) -> (Sing * alk) -> (Sing alk all) -> Sing' ('CompGt alm aln alo
+    alp)
 $(P.return [])
-data AY (pf :: TyFun' * *)
+data AY (alv :: TyFun' * *)
 $(P.return [])
-data BA (ph :: *) (pg :: TyFun' * *)
+data BA (alx :: *) (alw :: TyFun' * *)
 $(P.return [])
-data BC (pk :: *) (pj :: *) (pi :: TyFun' * *)
+data BC (ama :: *) (alz :: *) (aly :: TyFun' * *)
 $(P.return [])
-data BE (po :: *) (pn :: *) (pm :: *) (pl :: TyFun' Comparison *)
+data BE (ame :: *) (amd :: *) (amc :: *) (amb :: TyFun' Comparison *)
 $(P.return [])
-type instance (@@) (BE ps pr pq) pp = *
+type instance (@@) (BE ami amh amg) amf = *
 $(P.return [])
-type instance (@@) (BC pv pu) pt = TyPi Comparison (BE pv pu pt)
+type instance (@@) (BC aml amk) amj = TyPi Comparison (BE aml amk amj)
 $(P.return [])
-type instance (@@) (BA px) pw = TyPi * (BC px pw)
+type instance (@@) (BA amn) amm = TyPi * (BC amn amm)
 $(P.return [])
-type instance (@@) AY py = TyPi * (BA py)
+type instance (@@) AY amo = TyPi * (BA amo)
 $(P.return [])
-data AX (pz :: TyPi' * AY)
+data AX (amp :: TyPi' * AY)
 $(P.return [])
-data AZ (qb :: *) (qa :: TyPi' * (BA qb))
+data AZ (amr :: *) (amq :: TyPi' * (BA amr))
 $(P.return [])
-type instance (@@@) AX qc = AZ qc
+type instance (@@@) AX ams = AZ ams
 $(P.return [])
-data BB (qf :: *) (qe :: *) (qd :: TyPi' * (BC qf qe))
+data BB (amv :: *) (amu :: *) (amt :: TyPi' * (BC amv amu))
 $(P.return [])
-type instance (@@@) (AZ qh) qg = BB qh qg
+type instance (@@@) (AZ amx) amw = BB amx amw
 $(P.return [])
-data BD (ql :: *) (qk :: *) (qj :: *) (qi :: TyPi' Comparison (BE ql qk qj))
+data BD (anb :: *) (ana :: *) (amz :: *) (amy :: TyPi' Comparison (BE anb ana amz))
 $(P.return [])
-type instance (@@@) (BB qo qn) qm = BD qo qn qm
+type instance (@@@) (BB ane and) anc = BD ane and anc
 $(P.return [])
-type instance (@@@) (BD qs qr qq) qp = CompareSpec qs qr qq qp
+type instance (@@@) (BD ani anh ang) anf = CompareSpec ani anh ang anf
 $(P.return [])
-data instance Sing Comparison qt where
+data instance Sing Comparison anj where
   SEq ::   Sing' 'Eq
   SLt ::   Sing' 'Lt
   SGt ::   Sing' 'Gt
 $(P.return [])
-data List (qx :: *) :: * where
-  Nil ::   forall (qu :: *). (Sing * qu) -> List qu
-  Cons ::   forall (qv :: *) (qw :: qv). (Sing * qv) -> (Sing qv qw) -> (List qv) -> List qv
-data AW (qy :: TyFun' * *)
+data List (ann :: *) :: * where
+  Nil ::   forall (ank :: *). (Sing * ank) -> List ank
+  Cons ::   forall (anl :: *) (anm :: anl). (Sing * anl) -> (Sing anl anm) -> (List anl) -> List anl
 $(P.return [])
-type instance (@@) AW qz = *
-$(P.return [])
-data AV (ra :: TyPi' * AW)
-$(P.return [])
-type instance (@@@) AV rb = List rb
-$(P.return [])
-data instance Sing (List rk) rj where
-  SNil ::   forall (rc :: *) (rd :: Sing * rc). (Sing * rc) -> Sing' ('Nil rd)
+data instance Sing (List anw) anv where
+  SNil ::   forall (ano :: *) (anp :: Sing * ano). (Sing * ano) -> Sing' ('Nil anp)
   SCons ::
-    forall (re :: *) (rf :: re) (rg :: Sing * re) (rh :: Sing re rf) (ri :: AV @@@ re). (Sing * re) -> (Sing re rf) ->
-    (Sing (AV @@@ re) ri) -> Sing' ('Cons rg rh ri)
+    forall (anq :: *) (anr :: anq) (ans :: Sing * anq) (ant :: Sing anq anr) (anu :: List anq). (Sing * anq) -> (Sing
+    anq anr) -> (Sing (List anq) anu) -> Sing' ('Cons ans ant anu)
 $(P.return [])
-data Prod (rp :: *) (rq :: *) :: * where
+data AW (anx :: TyFun' * *)
+$(P.return [])
+type instance (@@) AW any = *
+$(P.return [])
+data AV (anz :: TyPi' * AW)
+$(P.return [])
+type instance (@@@) AV aoa = List aoa
+$(P.return [])
+data Prod (aof :: *) (aog :: *) :: * where
   Pair ::
-    forall (rl :: *) (rm :: *) (rn :: rl) (ro :: rm). (Sing * rl) -> (Sing * rm) -> (Sing rl rn) -> (Sing rm ro) ->
-    Prod rl rm
-data instance Sing (Prod sa sb) rz where
+    forall (aob :: *) (aoc :: *) (aod :: aob) (aoe :: aoc). (Sing * aob) -> (Sing * aoc) -> (Sing aob aod) -> (Sing aoc
+    aoe) -> Prod aob aoc
+$(P.return [])
+data instance Sing (Prod aoq aor) aop where
   SPair ::
-    forall (rr :: *) (rs :: *) (rt :: rr) (ru :: rs) (rv :: Sing * rr) (rw :: Sing * rs) (rx :: Sing rr rt) (ry :: Sing
-    rs ru). (Sing * rr) -> (Sing * rs) -> (Sing rr rt) -> (Sing rs ru) -> Sing' ('Pair rv rw rx ry)
+    forall (aoh :: *) (aoi :: *) (aoj :: aoh) (aok :: aoi) (aol :: Sing * aoh) (aom :: Sing * aoi) (aon :: Sing aoh
+    aoj) (aoo :: Sing aoi aok). (Sing * aoh) -> (Sing * aoi) -> (Sing aoh aoj) -> (Sing aoi aok) -> Sing' ('Pair aol
+    aom aon aoo)
 $(P.return [])
-data AS (sc :: TyFun' * *)
+data AS (aos :: TyFun' * *)
 $(P.return [])
-data AU (se :: *) (sd :: TyFun' * *)
+data AU (aou :: *) (aot :: TyFun' * *)
 $(P.return [])
-type instance (@@) (AU sg) sf = *
+type instance (@@) (AU aow) aov = *
 $(P.return [])
-type instance (@@) AS sh = TyPi * (AU sh)
+type instance (@@) AS aox = TyPi * (AU aox)
 $(P.return [])
-data AR (si :: TyPi' * AS)
+data AR (aoy :: TyPi' * AS)
 $(P.return [])
-data AT (sk :: *) (sj :: TyPi' * (AU sk))
+data AT (apa :: *) (aoz :: TyPi' * (AU apa))
 $(P.return [])
-type instance (@@@) AR sl = AT sl
+type instance (@@@) AR apb = AT apb
 $(P.return [])
-type instance (@@@) (AT sn) sm = Prod sn sm
+type instance (@@@) (AT apd) apc = Prod apd apc
 $(P.return [])
-data Sum (su :: *) (sv :: *) :: * where
-  Inl ::   forall (so :: *) (sp :: *) (sq :: so). (Sing * so) -> (Sing * sp) -> (Sing so sq) -> Sum so sp
-  Inr ::   forall (sr :: *) (ss :: *) (st :: ss). (Sing * sr) -> (Sing * ss) -> (Sing ss st) -> Sum sr ss
-data instance Sing (Sum tj tk) ti where
+data Sum (apk :: *) (apl :: *) :: * where
+  Inl ::   forall (ape :: *) (apf :: *) (apg :: ape). (Sing * ape) -> (Sing * apf) -> (Sing ape apg) -> Sum ape apf
+  Inr ::   forall (aph :: *) (api :: *) (apj :: api). (Sing * aph) -> (Sing * api) -> (Sing api apj) -> Sum aph api
+$(P.return [])
+data instance Sing (Sum apz aqa) apy where
   SInl ::
-    forall (sw :: *) (sx :: *) (sy :: sw) (sz :: Sing * sw) (ta :: Sing * sx) (tb :: Sing sw sy). (Sing * sw) -> (Sing
-    * sx) -> (Sing sw sy) -> Sing' ('Inl sz ta tb)
+    forall (apm :: *) (apn :: *) (apo :: apm) (app :: Sing * apm) (apq :: Sing * apn) (apr :: Sing apm apo). (Sing *
+    apm) -> (Sing * apn) -> (Sing apm apo) -> Sing' ('Inl app apq apr)
   SInr ::
-    forall (tc :: *) (td :: *) (te :: td) (tf :: Sing * tc) (tg :: Sing * td) (th :: Sing td te). (Sing * tc) -> (Sing
-    * td) -> (Sing td te) -> Sing' ('Inr tf tg th)
+    forall (aps :: *) (apt :: *) (apu :: apt) (apv :: Sing * aps) (apw :: Sing * apt) (apx :: Sing apt apu). (Sing *
+    aps) -> (Sing * apt) -> (Sing apt apu) -> Sing' ('Inr apv apw apx)
 $(P.return [])
-data AO (tl :: TyFun' * *)
+data AO (aqb :: TyFun' * *)
 $(P.return [])
-data AQ (tn :: *) (tm :: TyFun' * *)
+data AQ (aqd :: *) (aqc :: TyFun' * *)
 $(P.return [])
-type instance (@@) (AQ tp) to = *
+type instance (@@) (AQ aqf) aqe = *
 $(P.return [])
-type instance (@@) AO tq = TyPi * (AQ tq)
+type instance (@@) AO aqg = TyPi * (AQ aqg)
 $(P.return [])
-data AN (tr :: TyPi' * AO)
+data AN (aqh :: TyPi' * AO)
 $(P.return [])
-data AP (tt :: *) (ts :: TyPi' * (AQ tt))
+data AP (aqj :: *) (aqi :: TyPi' * (AQ aqj))
 $(P.return [])
-type instance (@@@) AN tu = AP tu
+type instance (@@@) AN aqk = AP aqk
 $(P.return [])
-type instance (@@@) (AP tw) tv = Sum tw tv
+type instance (@@@) (AP aqm) aql = Sum aqm aql
 $(P.return [])
-data Option (ua :: *) :: * where
-  Some ::   forall (tx :: *) (ty :: tx). (Sing * tx) -> (Sing tx ty) -> Option tx
-  None ::   forall (tz :: *). (Sing * tz) -> Option tz
-data instance Sing (Option ui) uh where
+data Option (aqq :: *) :: * where
+  Some ::   forall (aqn :: *) (aqo :: aqn). (Sing * aqn) -> (Sing aqn aqo) -> Option aqn
+  None ::   forall (aqp :: *). (Sing * aqp) -> Option aqp
+$(P.return [])
+data instance Sing (Option aqy) aqx where
   SSome ::
-    forall (ub :: *) (uc :: ub) (ud :: Sing * ub) (ue :: Sing ub uc). (Sing * ub) -> (Sing ub uc) -> Sing' ('Some ud
-    ue)
-  SNone ::   forall (uf :: *) (ug :: Sing * uf). (Sing * uf) -> Sing' ('None ug)
+    forall (aqr :: *) (aqs :: aqr) (aqt :: Sing * aqr) (aqu :: Sing aqr aqs). (Sing * aqr) -> (Sing aqr aqs) -> Sing'
+    ('Some aqt aqu)
+  SNone ::   forall (aqv :: *) (aqw :: Sing * aqv). (Sing * aqv) -> Sing' ('None aqw)
 $(P.return [])
-data AM (uj :: TyFun' * *)
+data AM (aqz :: TyFun' * *)
 $(P.return [])
-type instance (@@) AM uk = *
+type instance (@@) AM ara = *
 $(P.return [])
-data AL (ul :: TyPi' * AM)
+data AL (arb :: TyPi' * AM)
 $(P.return [])
-type instance (@@@) AL um = Option um
+type instance (@@@) AL arc = Option arc
 $(P.return [])
-data instance Sing Nat uo where
+data instance Sing Nat are where
   SO ::   Sing' 'O
-  SS ::   forall (un :: Nat). (Sing Nat un) -> Sing' ('S un)
+  SS ::   forall (ard :: Nat). (Sing Nat ard) -> Sing' ('S ard)
 $(P.return [])
 data Bool :: * where
   True ::   Bool
   False ::   Bool
-data BoolSpec (uv :: *) (uw :: *) (ux :: Bool) :: * where
+$(P.return [])
+data BoolSpec (arl :: *) (arm :: *) (arn :: Bool) :: * where
   BoolSpecT ::
-    forall (up :: *) (uq :: *) (ur :: up). (Sing * up) -> (Sing * uq) -> (Sing up ur) -> BoolSpec up uq 'True
+    forall (arf :: *) (arg :: *) (arh :: arf). (Sing * arf) -> (Sing * arg) -> (Sing arf arh) -> BoolSpec arf arg 'True
   BoolSpecF ::
-    forall (us :: *) (ut :: *) (uu :: ut). (Sing * us) -> (Sing * ut) -> (Sing ut uu) -> BoolSpec us ut 'False
-data instance Sing (BoolSpec vl vm vn) vk where
+    forall (ari :: *) (arj :: *) (ark :: arj). (Sing * ari) -> (Sing * arj) -> (Sing arj ark) -> BoolSpec ari arj
+    'False
+$(P.return [])
+data instance Sing (BoolSpec asb asc asd) asa where
   SBoolSpecT ::
-    forall (uy :: *) (uz :: *) (va :: uy) (vb :: Sing * uy) (vc :: Sing * uz) (vd :: Sing uy va). (Sing * uy) -> (Sing
-    * uz) -> (Sing uy va) -> Sing' ('BoolSpecT vb vc vd)
+    forall (aro :: *) (arp :: *) (arq :: aro) (arr :: Sing * aro) (ars :: Sing * arp) (art :: Sing aro arq). (Sing *
+    aro) -> (Sing * arp) -> (Sing aro arq) -> Sing' ('BoolSpecT arr ars art)
   SBoolSpecF ::
-    forall (ve :: *) (vf :: *) (vg :: vf) (vh :: Sing * ve) (vi :: Sing * vf) (vj :: Sing vf vg). (Sing * ve) -> (Sing
-    * vf) -> (Sing vf vg) -> Sing' ('BoolSpecF vh vi vj)
+    forall (aru :: *) (arv :: *) (arw :: arv) (arx :: Sing * aru) (ary :: Sing * arv) (arz :: Sing arv arw). (Sing *
+    aru) -> (Sing * arv) -> (Sing arv arw) -> Sing' ('BoolSpecF arx ary arz)
 $(P.return [])
-data AG (vo :: TyFun' * *)
+data AG (ase :: TyFun' * *)
 $(P.return [])
-data AI (vq :: *) (vp :: TyFun' * *)
+data AI (asg :: *) (asf :: TyFun' * *)
 $(P.return [])
-data AK (vt :: *) (vs :: *) (vr :: TyFun' Bool *)
+data AK (asj :: *) (asi :: *) (ash :: TyFun' Bool *)
 $(P.return [])
-type instance (@@) (AK vw vv) vu = *
+type instance (@@) (AK asm asl) ask = *
 $(P.return [])
-type instance (@@) (AI vy) vx = TyPi Bool (AK vy vx)
+type instance (@@) (AI aso) asn = TyPi Bool (AK aso asn)
 $(P.return [])
-type instance (@@) AG vz = TyPi * (AI vz)
+type instance (@@) AG asp = TyPi * (AI asp)
 $(P.return [])
-data AF (wa :: TyPi' * AG)
+data AF (asq :: TyPi' * AG)
 $(P.return [])
-data AH (wc :: *) (wb :: TyPi' * (AI wc))
+data AH (ass :: *) (asr :: TyPi' * (AI ass))
 $(P.return [])
-type instance (@@@) AF wd = AH wd
+type instance (@@@) AF ast = AH ast
 $(P.return [])
-data AJ (wg :: *) (wf :: *) (we :: TyPi' Bool (AK wg wf))
+data AJ (asw :: *) (asv :: *) (asu :: TyPi' Bool (AK asw asv))
 $(P.return [])
-type instance (@@@) (AH wi) wh = AJ wi wh
+type instance (@@@) (AH asy) asx = AJ asy asx
 $(P.return [])
-type instance (@@@) (AJ wl wk) wj = BoolSpec wl wk wj
+type instance (@@@) (AJ atb ata) asz = BoolSpec atb ata asz
 $(P.return [])
-data Eq_true (wm :: Bool) :: * where
+data Eq_true (atc :: Bool) :: * where
   Is_eq_true ::   Eq_true 'True
-data instance Sing (Eq_true wo) wn where
+$(P.return [])
+data instance Sing (Eq_true ate) atd where
   SIs_eq_true ::   Sing' 'Is_eq_true
 $(P.return [])
-data AE (wp :: TyFun' Bool *)
+data AE (atf :: TyFun' Bool *)
 $(P.return [])
-type instance (@@) AE wq = *
+type instance (@@) AE atg = *
 $(P.return [])
-data AD (wr :: TyPi' Bool AE)
+data AD (ath :: TyPi' Bool AE)
 $(P.return [])
-type instance (@@@) AD ws = Eq_true ws
+type instance (@@@) AD ati = Eq_true ati
 $(P.return [])
-data instance Sing Bool wt where
+data instance Sing Bool atj where
   STrue ::   Sing' 'True
   SFalse ::   Sing' 'False
 $(P.return [])
 data Unit :: * where
   Tt ::   Unit
-data instance Sing Unit wu where
+$(P.return [])
+data instance Sing Unit atk where
   STt ::   Sing' 'Tt
 $(P.return [])
 data Empty_set :: * where
   
-data instance Sing Empty_set wv where
+$(P.return [])
+data instance Sing Empty_set atl where
   
 $(P.return [])
-data Inhabited (wy :: *) :: * where
-  Inhabits ::   forall (ww :: *) (wx :: ww). (Sing * ww) -> (Sing ww wx) -> Inhabited ww
-data instance Sing (Inhabited xe) xd where
+data Inhabited (ato :: *) :: * where
+  Inhabits ::   forall (atm :: *) (atn :: atm). (Sing * atm) -> (Sing atm atn) -> Inhabited atm
+$(P.return [])
+data instance Sing (Inhabited atu) att where
   SInhabits ::
-    forall (wz :: *) (xa :: wz) (xb :: Sing * wz) (xc :: Sing wz xa). (Sing * wz) -> (Sing wz xa) -> Sing' ('Inhabits
-    xb xc)
+    forall (atp :: *) (atq :: atp) (atr :: Sing * atp) (ats :: Sing atp atq). (Sing * atp) -> (Sing atp atq) -> Sing'
+    ('Inhabits atr ats)
 $(P.return [])
-data AC (xf :: TyFun' * *)
+data AC (atv :: TyFun' * *)
 $(P.return [])
-type instance (@@) AC xg = *
+type instance (@@) AC atw = *
 $(P.return [])
-data AB (xh :: TyPi' * AC)
+data AB (atx :: TyPi' * AC)
 $(P.return [])
-type instance (@@@) AB xi = Inhabited xi
+type instance (@@@) AB aty = Inhabited aty
 $(P.return [])
-data Eq (xl :: *) (xm :: xl) (xn :: xl) :: * where
-  Eq_refl ::   forall (xj :: *) (xk :: xj). (Sing * xj) -> (Sing xj xk) -> Eq xj xk xk
-data instance Sing (Eq xt xu xv) xs where
+data Eq (aub :: *) (auc :: aub) (aud :: aub) :: * where
+  Eq_refl ::   forall (atz :: *) (aua :: atz). (Sing * atz) -> (Sing atz aua) -> Eq atz aua aua
+$(P.return [])
+data instance Sing (Eq auj auk aul) aui where
   SEq_refl ::
-    forall (xo :: *) (xp :: xo) (xq :: Sing * xo) (xr :: Sing xo xp). (Sing * xo) -> (Sing xo xp) -> Sing' ('Eq_refl xq
-    xr)
+    forall (aue :: *) (auf :: aue) (aug :: Sing * aue) (auh :: Sing aue auf). (Sing * aue) -> (Sing aue auf) -> Sing'
+    ('Eq_refl aug auh)
 $(P.return [])
-data W (xw :: TyFun' * *)
+data W (aum :: TyFun' * *)
 $(P.return [])
-data Y (xy :: *) (xx :: TyFun' xy *)
+data Y (auo :: *) (aun :: TyFun' auo *)
 $(P.return [])
-data AA (yb :: *) (ya :: yb) (xz :: TyFun' yb *)
+data AA (aur :: *) (auq :: aur) (aup :: TyFun' aur *)
 $(P.return [])
-type instance (@@) (AA ye yd) yc = *
+type instance (@@) (AA auu aut) aus = *
 $(P.return [])
-type instance (@@) (Y yg) yf = TyPi yg (AA yg yf)
+type instance (@@) (Y auw) auv = TyPi auw (AA auw auv)
 $(P.return [])
-type instance (@@) W yh = TyPi yh (Y yh)
+type instance (@@) W aux = TyPi aux (Y aux)
 $(P.return [])
-data V (yi :: TyPi' * W)
+data V (auy :: TyPi' * W)
 $(P.return [])
-data X (yk :: *) (yj :: TyPi' yk (Y yk))
+data X (ava :: *) (auz :: TyPi' ava (Y ava))
 $(P.return [])
-type instance (@@@) V yl = X yl
+type instance (@@@) V avb = X avb
 $(P.return [])
-data Z (yo :: *) (yn :: yo) (ym :: TyPi' yo (AA yo yn))
+data Z (ave :: *) (avd :: ave) (avc :: TyPi' ave (AA ave avd))
 $(P.return [])
-type instance (@@@) (X yq) yp = Z yq yp
+type instance (@@@) (X avg) avf = Z avg avf
 $(P.return [])
-type instance (@@@) (Z yt ys) yr = Eq yt ys yr
+type instance (@@@) (Z avj avi) avh = Eq avj avi avh
 $(P.return [])
-data Ex2 (za :: *) (zb :: TyPi za (I za)) (zc :: TyPi za (N za zb)) :: * where
+data Ex2 (avq :: *) (avr :: TyPi avq (I avq)) (avs :: TyPi avq (N avq avr)) :: * where
   Ex_intro2 ::
-    forall (yu :: *) (yv :: TyPi yu (I yu)) (yw :: TyPi yu (N yu yv)) (yx :: yu) (yy :: yv @@@ yx) (yz :: yw @@@ yx).
-    (Sing * yu) -> (Sing (TyPi yu (I yu)) yv) -> (Sing (TyPi yu (N yu yv)) yw) -> (Sing yu yx) -> (Sing (yv @@@ yx) yy)
-    -> (Sing (yw @@@ yx) yz) -> Ex2 yu yv yw
-data instance Sing (Ex2 zq zr zs) zp where
+    forall (avk :: *) (avl :: TyPi avk (I avk)) (avm :: TyPi avk (N avk avl)) (avn :: avk) (avo :: avl @@@ avn) (avp ::
+    avm @@@ avn). (Sing * avk) -> (Sing (TyPi avk (I avk)) avl) -> (Sing (TyPi avk (N avk avl)) avm) -> (Sing avk avn)
+    -> (Sing (avl @@@ avn) avo) -> (Sing (avm @@@ avn) avp) -> Ex2 avk avl avm
+$(P.return [])
+data instance Sing (Ex2 awg awh awi) awf where
   SEx_intro2 ::
-    forall (zd :: *) (ze :: TyPi zd (I zd)) (zf :: TyPi zd (N zd ze)) (zg :: zd) (zh :: ze @@@ zg) (zi :: zf @@@ zg)
-    (zj :: Sing * zd) (zk :: Sing (TyPi zd (I zd)) ze) (zl :: Sing (TyPi zd (N zd ze)) zf) (zm :: Sing zd zg) (zn ::
-    Sing (ze @@@ zg) zh) (zo :: Sing (zf @@@ zg) zi). (Sing * zd) -> (Sing (TyPi zd (I zd)) ze) -> (Sing (TyPi zd (N zd
-    ze)) zf) -> (Sing zd zg) -> (Sing (ze @@@ zg) zh) -> (Sing (zf @@@ zg) zi) -> Sing' ('Ex_intro2 zj zk zl zm zn zo)
+    forall (avt :: *) (avu :: TyPi avt (I avt)) (avv :: TyPi avt (N avt avu)) (avw :: avt) (avx :: avu @@@ avw) (avy ::
+    avv @@@ avw) (avz :: Sing * avt) (awa :: Sing (TyPi avt (I avt)) avu) (awb :: Sing (TyPi avt (N avt avu)) avv) (awc
+    :: Sing avt avw) (awd :: Sing (avu @@@ avw) avx) (awe :: Sing (avv @@@ avw) avy). (Sing * avt) -> (Sing (TyPi avt
+    (I avt)) avu) -> (Sing (TyPi avt (N avt avu)) avv) -> (Sing avt avw) -> (Sing (avu @@@ avw) avx) -> (Sing (avv @@@
+    avw) avy) -> Sing' ('Ex_intro2 avz awa awb awc awd awe)
 $(P.return [])
-data P (zt :: TyFun' * *)
+data P (awj :: TyFun' * *)
 $(P.return [])
-data R (zv :: *) (zu :: TyFun' (TyPi zv (I zv)) *)
+data R (awl :: *) (awk :: TyFun' (TyPi awl (I awl)) *)
 $(P.return [])
-data U (zy :: *) (zx :: TyPi zy (I zy)) (zw :: TyFun' (TyPi zy (N zy zx)) *)
+data U (awo :: *) (awn :: TyPi awo (I awo)) (awm :: TyFun' (TyPi awo (N awo awn)) *)
 $(P.return [])
-type instance (@@) (U aab aaa) zz = *
+type instance (@@) (U awr awq) awp = *
 $(P.return [])
-type instance (@@) (R aad) aac = TyPi (TyPi aad (N aad aac)) (U aad aac)
+type instance (@@) (R awt) aws = TyPi (TyPi awt (N awt aws)) (U awt aws)
 $(P.return [])
-type instance (@@) P aae = TyPi (TyPi aae (I aae)) (R aae)
+type instance (@@) P awu = TyPi (TyPi awu (I awu)) (R awu)
 $(P.return [])
-data O (aaf :: TyPi' * P)
+data O (awv :: TyPi' * P)
 $(P.return [])
-data Q (aah :: *) (aag :: TyPi' (TyPi aah (I aah)) (R aah))
+data Q (awx :: *) (aww :: TyPi' (TyPi awx (I awx)) (R awx))
 $(P.return [])
-type instance (@@@) O aai = Q aai
+type instance (@@@) O awy = Q awy
 $(P.return [])
-data S (aal :: *) (aak :: TyPi aal (I aal)) (aaj :: TyPi' (TyPi aal (N aal aak)) (U aal aak))
+data S (axb :: *) (axa :: TyPi axb (I axb)) (awz :: TyPi' (TyPi axb (N axb axa)) (U axb axa))
 $(P.return [])
-type instance (@@@) (Q aan) aam = S aan aam
+type instance (@@@) (Q axd) axc = S axd axc
 $(P.return [])
-type instance (@@@) (S aaq aap) aao = Ex2 aaq aap aao
+type instance (@@@) (S axg axf) axe = Ex2 axg axf axe
 $(P.return [])
-data Ex (aav :: *) (aaw :: TyPi aav (I aav)) :: * where
+data Ex (axl :: *) (axm :: TyPi axl (I axl)) :: * where
   Ex_intro ::
-    forall (aar :: *) (aas :: TyPi aar (I aar)) (aat :: aar) (aau :: aas @@@ aat). (Sing * aar) -> (Sing (TyPi aar (I
-    aar)) aas) -> (Sing aar aat) -> (Sing (aas @@@ aat) aau) -> Ex aar aas
-data instance Sing (Ex abg abh) abf where
+    forall (axh :: *) (axi :: TyPi axh (I axh)) (axj :: axh) (axk :: axi @@@ axj). (Sing * axh) -> (Sing (TyPi axh (I
+    axh)) axi) -> (Sing axh axj) -> (Sing (axi @@@ axj) axk) -> Ex axh axi
+$(P.return [])
+data instance Sing (Ex axw axx) axv where
   SEx_intro ::
-    forall (aax :: *) (aay :: TyPi aax (I aax)) (aaz :: aax) (aba :: aay @@@ aaz) (abb :: Sing * aax) (abc :: Sing
-    (TyPi aax (I aax)) aay) (abd :: Sing aax aaz) (abe :: Sing (aay @@@ aaz) aba). (Sing * aax) -> (Sing (TyPi aax (I
-    aax)) aay) -> (Sing aax aaz) -> (Sing (aay @@@ aaz) aba) -> Sing' ('Ex_intro abb abc abd abe)
+    forall (axn :: *) (axo :: TyPi axn (I axn)) (axp :: axn) (axq :: axo @@@ axp) (axr :: Sing * axn) (axs :: Sing
+    (TyPi axn (I axn)) axo) (axt :: Sing axn axp) (axu :: Sing (axo @@@ axp) axq). (Sing * axn) -> (Sing (TyPi axn (I
+    axn)) axo) -> (Sing axn axp) -> (Sing (axo @@@ axp) axq) -> Sing' ('Ex_intro axr axs axt axu)
 $(P.return [])
-data K (abi :: TyFun' * *)
+data K (axy :: TyFun' * *)
 $(P.return [])
-data M (abk :: *) (abj :: TyFun' (TyPi abk (I abk)) *)
+data M (aya :: *) (axz :: TyFun' (TyPi aya (I aya)) *)
 $(P.return [])
-type instance (@@) (M abm) abl = *
+type instance (@@) (M ayc) ayb = *
 $(P.return [])
-type instance (@@) K abn = TyPi (TyPi abn (I abn)) (M abn)
+type instance (@@) K ayd = TyPi (TyPi ayd (I ayd)) (M ayd)
 $(P.return [])
-data J (abo :: TyPi' * K)
+data J (aye :: TyPi' * K)
 $(P.return [])
-data L (abq :: *) (abp :: TyPi' (TyPi abq (I abq)) (M abq))
+data L (ayg :: *) (ayf :: TyPi' (TyPi ayg (I ayg)) (M ayg))
 $(P.return [])
-type instance (@@@) J abr = L abr
+type instance (@@@) J ayh = L ayh
 $(P.return [])
-type instance (@@@) (L abt) abs = Ex abt abs
+type instance (@@@) (L ayj) ayi = Ex ayj ayi
 $(P.return [])
-data Or (aca :: *) (acb :: *) :: * where
+data Or (ayq :: *) (ayr :: *) :: * where
   Or_introl ::
-    forall (abu :: *) (abv :: *) (abw :: abu). (Sing * abu) -> (Sing * abv) -> (Sing abu abw) -> Or abu abv
+    forall (ayk :: *) (ayl :: *) (aym :: ayk). (Sing * ayk) -> (Sing * ayl) -> (Sing ayk aym) -> Or ayk ayl
   Or_intror ::
-    forall (abx :: *) (aby :: *) (abz :: aby). (Sing * abx) -> (Sing * aby) -> (Sing aby abz) -> Or abx aby
-data instance Sing (Or acp acq) aco where
+    forall (ayn :: *) (ayo :: *) (ayp :: ayo). (Sing * ayn) -> (Sing * ayo) -> (Sing ayo ayp) -> Or ayn ayo
+$(P.return [])
+data instance Sing (Or azf azg) aze where
   SOr_introl ::
-    forall (acc :: *) (acd :: *) (ace :: acc) (acf :: Sing * acc) (acg :: Sing * acd) (ach :: Sing acc ace). (Sing *
-    acc) -> (Sing * acd) -> (Sing acc ace) -> Sing' ('Or_introl acf acg ach)
+    forall (ays :: *) (ayt :: *) (ayu :: ays) (ayv :: Sing * ays) (ayw :: Sing * ayt) (ayx :: Sing ays ayu). (Sing *
+    ays) -> (Sing * ayt) -> (Sing ays ayu) -> Sing' ('Or_introl ayv ayw ayx)
   SOr_intror ::
-    forall (aci :: *) (acj :: *) (ack :: acj) (acl :: Sing * aci) (acm :: Sing * acj) (acn :: Sing acj ack). (Sing *
-    aci) -> (Sing * acj) -> (Sing acj ack) -> Sing' ('Or_intror acl acm acn)
+    forall (ayy :: *) (ayz :: *) (aza :: ayz) (azb :: Sing * ayy) (azc :: Sing * ayz) (azd :: Sing ayz aza). (Sing *
+    ayy) -> (Sing * ayz) -> (Sing ayz aza) -> Sing' ('Or_intror azb azc azd)
 $(P.return [])
-data F (acr :: TyFun' * *)
+data F (azh :: TyFun' * *)
 $(P.return [])
-data H (act :: *) (acs :: TyFun' * *)
+data H (azj :: *) (azi :: TyFun' * *)
 $(P.return [])
-type instance (@@) (H acv) acu = *
+type instance (@@) (H azl) azk = *
 $(P.return [])
-type instance (@@) F acw = TyPi * (H acw)
+type instance (@@) F azm = TyPi * (H azm)
 $(P.return [])
-data E (acx :: TyPi' * F)
+data E (azn :: TyPi' * F)
 $(P.return [])
-data G (acz :: *) (acy :: TyPi' * (H acz))
+data G (azp :: *) (azo :: TyPi' * (H azp))
 $(P.return [])
-type instance (@@@) E ada = G ada
+type instance (@@@) E azq = G azq
 $(P.return [])
-type instance (@@@) (G adc) adb = Or adc adb
+type instance (@@@) (G azs) azr = Or azs azr
 $(P.return [])
-data And (adh :: *) (adi :: *) :: * where
+data And (azx :: *) (azy :: *) :: * where
   Conj ::
-    forall (add :: *) (ade :: *) (adf :: add) (adg :: ade). (Sing * add) -> (Sing * ade) -> (Sing add adf) -> (Sing ade
-    adg) -> And add ade
-data instance Sing (And ads adt) adr where
+    forall (azt :: *) (azu :: *) (azv :: azt) (azw :: azu). (Sing * azt) -> (Sing * azu) -> (Sing azt azv) -> (Sing azu
+    azw) -> And azt azu
+$(P.return [])
+data instance Sing (And bai baj) bah where
   SConj ::
-    forall (adj :: *) (adk :: *) (adl :: adj) (adm :: adk) (adn :: Sing * adj) (ado :: Sing * adk) (adp :: Sing adj
-    adl) (adq :: Sing adk adm). (Sing * adj) -> (Sing * adk) -> (Sing adj adl) -> (Sing adk adm) -> Sing' ('Conj adn
-    ado adp adq)
+    forall (azz :: *) (baa :: *) (bab :: azz) (bac :: baa) (bad :: Sing * azz) (bae :: Sing * baa) (baf :: Sing azz
+    bab) (bag :: Sing baa bac). (Sing * azz) -> (Sing * baa) -> (Sing azz bab) -> (Sing baa bac) -> Sing' ('Conj bad
+    bae baf bag)
 $(P.return [])
-data B (adu :: TyFun' * *)
+data B (bak :: TyFun' * *)
 $(P.return [])
-data D (adw :: *) (adv :: TyFun' * *)
+data D (bam :: *) (bal :: TyFun' * *)
 $(P.return [])
-type instance (@@) (D ady) adx = *
+type instance (@@) (D bao) ban = *
 $(P.return [])
-type instance (@@) B adz = TyPi * (D adz)
+type instance (@@) B bap = TyPi * (D bap)
 $(P.return [])
-data A (aea :: TyPi' * B)
+data A (baq :: TyPi' * B)
 $(P.return [])
-data C (aec :: *) (aeb :: TyPi' * (D aec))
+data C (bas :: *) (bar :: TyPi' * (D bas))
 $(P.return [])
-type instance (@@@) A aed = C aed
+type instance (@@@) A bat = C bat
 $(P.return [])
-type instance (@@@) (C aef) aee = And aef aee
+type instance (@@@) (C bav) bau = And bav bau
 $(P.return [])
 data False :: * where
   
-data instance Sing False aeg where
+$(P.return [])
+data instance Sing False baw where
   
 $(P.return [])
 data True :: * where
   I ::   True
-data instance Sing True aeh where
-  SI ::   Sing' 'I
 $(P.return [])
+data instance Sing True bax where
+  SI ::   Sing' 'I
