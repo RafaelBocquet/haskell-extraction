@@ -74,5 +74,5 @@ let rec application_view env c =
 let head_is_inductive df env c =
   Option.cata (fun ((kn,i) as df) -> match fst (application_view env c) with
       | Ind ((kn',i') as n, u) -> eq_ind n df
-      | _ -> false 
+      | _ -> false
     ) false df
