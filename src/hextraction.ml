@@ -79,6 +79,24 @@ and extract_type_application : type a. inductive option -> a svar -> (a -> a hs_
       let cty = extract_kind df (V_next v) (extend_kind_list (lift_kind k) ks) (Some None :: List.map (Option.map some) vs) env' (Retyping.get_type_of ~polyprop:true env' Evd.empty c) in
       let c' = extract_kind df (V_next v) (extend_kind_list (lift_kind k) ks) (Some None :: List.map (Option.map some) vs) env' c in
       TyKind (defunctionalise_lambda v ks k cty c')
+    | Case (ci, creturn, a, bs), cs ->
+      (try
+         let ind = Indmap.find ci.ci_ind !state.st_inductives in
+         let t = extract_kind df v ks vs env a in
+         let k = extract_kind df v ks vs env creturn in
+         let ts = Array.map (extract_kind df v ks vs env) bs in
+         msg_error (str "MATCH\n" ++
+                    Printer.pr_constr c ++ fnl () ++
+                    prvect_with_sep spc int ci.ci_cstr_ndecls ++ fnl () ++
+                    prvect_with_sep spc int ci.ci_cstr_nargs ++ fnl () ++
+                    Printer.pr_constr creturn ++ fnl () ++
+                    pr_hs_kind k ++ fnl () ++
+                    str "sc: " ++ Printer.pr_constr a ++ fnl () ++
+                    pr_hs_kind t ++ fnl () ++
+                    prvect_with_sep fnl Printer.pr_constr bs ++ fnl () ++
+                    str "ts: " ++ prvect_with_sep fnl pr_hs_kind ts
+                  ); TyKind (defunctionalise_match ind v ks t k ts)
+       with Not_found -> failwith "TODO")
     | h, _ -> msg_error (Printer.pr_constr c); TyUnknown
 
 and extract_term : type a b. a svar -> a option list -> b svar -> Environ.env -> constr -> (a, b) hs_expr =
@@ -136,7 +154,7 @@ and extract_one_inductive_signature env kn mib i mip =
   msg_info (str "Inductive signature : " ++ Printer.pr_constr ar);
   let nm = find_dataname (String.capitalize (Id.to_string (mip.mind_typename))) in
   let Any_kind_signature s = extract_signature (Some (kn,i)) env ar in
-  let ct, _ = mk_constant (Hs_dataname (kn, i)) V_empty Empty.absurd s in
+  let _, ct, _ = mk_constant (Hs_dataname (kn, i)) V_empty Empty.absurd Empty.absurd s in
   let ind = { ind_name        = (kn, i)
             ; ind_printname   = nm
             ; ind_signature   = Any_kind_signature s
@@ -254,7 +272,9 @@ let out () =
         | Hs_sind d -> pr_hs_sing (Indmap.find d !state.st_inductives)
         | Hs_const c -> pr_hs_constant (Cmap.find c !state.st_constants)
         | Hs_symbol s -> pr_hs_symbol (Stringmap.find s !state.st_symbols)
-        | Hs_typefamily (a, b) -> pr_hs_type_family (Tfmap.find (a, b) !state.st_typefamilies)
+        | Hs_typefamily a -> pr_hs_type_family (Stringmap.find a !state.st_typefamilies)
+        | Hs_tyarr a -> pr_hs_type_family (Stringmap.find a !state.st_tyarrs)
+        | Hs_typi a -> pr_hs_type_family (Stringmap.find a !state.st_typis)
       ) i (acc ++ pr_th_hack ())
       ) (List.rev (sort_elems !state.st_list)) (mt ()));
   close_out cout

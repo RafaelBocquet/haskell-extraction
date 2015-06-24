@@ -8,6 +8,12 @@ Require Import
   Coq.Vectors.VectorSpec
   .
 
+Definition nS (n : nat) := match n with
+  | O => S O
+  | S n => S (S n)
+end
+.
+
 Hextraction
   Coq.Init.Logic
   Coq.Init.Logic_Type
@@ -17,10 +23,9 @@ Hextraction
   (* Coq.Init.Specif *)
   (* Coq.Init.Tactics *)
   Coq.Vectors.Fin
-  (* Coq.Init.Wf *)
+  (* Coq.Init.Wf *) (* https://github.com/goldfirere/ghc/issues/15 *)
   (* Coq.Setoids.Setoid *)
   (* Coq.Vectors.VectorDef *)
   (* Coq.Vectors.VectorSpec *)
-  ,
-  id not FS_inj
+  , 
 .
