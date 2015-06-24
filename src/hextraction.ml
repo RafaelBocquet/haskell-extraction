@@ -82,7 +82,8 @@ and extract_type_application : type a. inductive option -> a svar -> (a -> a hs_
     | Case (ci, creturn, a, bs), cs ->
       (try
          let ind = Indmap.find ci.ci_ind !state.st_inductives in
-         let t = extract_kind df v ks vs env a in
+         let a' = extract_kind df v ks vs env a in
+         let t = extract_kind df v ks vs env (Retyping.get_type_of ~polyprop:true env Evd.empty a) in
          let k = extract_kind df v ks vs env creturn in
          let ts = Array.map (extract_kind df v ks vs env) bs in
          msg_error (str "MATCH\n" ++
@@ -95,28 +96,72 @@ and extract_type_application : type a. inductive option -> a svar -> (a -> a hs_
                     pr_hs_kind t ++ fnl () ++
                     prvect_with_sep fnl Printer.pr_constr bs ++ fnl () ++
                     str "ts: " ++ prvect_with_sep fnl pr_hs_kind ts
-                  ); TyKind (defunctionalise_match ind v ks t k ts)
+                  ); TyKind (defunctionalise_match ind v ks a' t k ts)
        with Not_found -> failwith "TODO")
     | h, _ -> msg_error (Printer.pr_constr c); TyUnknown
 
-and extract_term : type a b. a svar -> a option list -> b svar -> Environ.env -> constr -> (a, b) hs_expr =
-  fun v vs v' env t -> extract_term_abstraction v vs v' env t
-and extract_term_abstraction : type a b. a svar -> a option list -> b svar -> Environ.env -> constr -> (a, b) hs_expr =
-  fun v vs v' env t ->
-    let cs, (envl, l) = abstraction_view env t in
-    let rec extract_term_abstraction' : type a b. a svar -> a option list -> b svar -> (Environ.env * constr) list -> (a, b) hs_expr =
-      fun v vs v' -> function
-        | (env, c) :: cs -> EAbs (None, extract_term_abstraction' (V_next v) (Some None :: List.map (Option.map some) vs) v' cs)
-        | [] -> extract_term_application v vs v' envl l
-    in extract_term_abstraction' v vs v' cs
-and extract_term_application : type a b. a svar -> a option list -> b svar -> Environ.env -> constr -> (a, b) hs_expr =
-  fun v vs v' env c ->
+and extract_term : type a b. a svar -> a option list -> b svar -> (b -> b hs_kind) -> b option list -> Environ.env -> constr -> (a, b) hs_expr =
+  fun v vs v' ks kvs env t -> extract_term_application v vs v' ks kvs env t
+(* and extract_term_abstraction : type a b. a svar -> a option list -> b svar -> (b -> b hs_kind) -> b option list -> Environ.env -> constr -> (a, b) hs_expr = *)
+(*   fun v vs v' ks kvs env t -> *)
+(*     let cs, (envl, l) = abstraction_view env t in *)
+(*     let rec extract_term_abstraction' : type a b. a svar -> a option list -> b svar -> (b -> b hs_kind) -> b option list -> (Environ.env * constr) list -> (a, b) hs_expr = *)
+(*       fun v vs v' ks kvs -> function *)
+(*         | (env, c) :: cs -> *)
+(*           let k = extract_kind None v' ks kvs env c in *)
+(*           EForall *)
+(*             (EAbs ( Some (TySing (lift_kind k, None)) *)
+(*                   , extract_term_abstraction' (V_next v) (Some None :: List.map (Option.map some) vs) (V_next v') (extend_kind_list (lift_kind k) ks) (Some None :: List.map (Option.map some) kvs) cs *)
+(*                   )) *)
+(*         | [] -> extract_term_application v vs v' ks kvs envl l *)
+(*     in extract_term_abstraction' v vs v' ks kvs cs *)
+and extract_term_application : type a b. a svar -> a option list -> b svar -> (b -> b hs_kind) -> b option list -> Environ.env -> constr -> (a, b) hs_expr =
+  fun v vs v' ks kvs env c ->
     match application_view env c with
     | Prod (_, _, _), [] -> EStar
+    | Lambda (x, t, c'), [] ->
+      let env' = push_rel (x,None,t) env in
+      let k1 = extract_kind None v' ks kvs env c in
+      let k = extract_kind None v' ks kvs env t in
+      EForall
+        ( Some k1
+        , EAbs ( Some (TySing (lift_kind k, None))
+               , extract_term (V_next v) (Some None :: List.map (Option.map some) vs) (V_next v') (extend_kind_list (lift_kind k) ks) (Some None :: List.map (Option.map some) kvs) env' c'
+               ))
     | Rel x, bs when x <= List.length vs ->
-      expr_application
+      expr_fun_application
         (match List.nth vs (x-1) with | Some v -> EVar v | None -> msg_error (str "UNKNOWN VAR"); EUnknown)
-        (List.map (extract_term v vs v' env) bs)
+        (List.map (extract_term v vs v' ks kvs env) bs)
+    | Case (ci, creturn, a, bs), cs ->
+      (try
+         let ind = Indmap.find ci.ci_ind !state.st_inductives in
+         let a' = extract_term v vs v' ks kvs env a in
+         (* let a' = extract_kind df v ks vs env a in *)
+         (* let t = extract_kind df v ks vs env (Retyping.get_type_of ~polyprop:true env Evd.empty a) in *)
+         (* let k = extract_kind df v ks vs env creturn in *)
+         (* let ts = Array.map (extract_kind df v ks vs env) bs in *)
+         ECase ( a'
+               , Array.mapi (fun i b ->
+                    let Any_con_pattern (p, l) = mk_con_pattern (Hs_sconstrname (ind.ind_name, i)) (List.length ind.ind_consarities.(i)) in
+                     Any_match ( PCon p
+                               , expr_fun_application
+                                   (map_expr Either.left id (extract_term v vs v' ks kvs env b))
+                                   (List.map (fun v -> EVar (Either.right v)) l)
+                               )
+                 ) bs
+               )
+       with Not_found -> failwith "TODO")
+    | Construct ((n,i),_), bs ->
+      (try
+         let ind = Indmap.find n !state.st_inductives in
+         expr_fun_application
+           (EConst (Hs_ssconstrname (ind.ind_name, i-1)))
+           (List.map2
+              (function
+                | true -> fun t -> extract_term v vs v' ks kvs env t
+                | false -> extract_term v vs v' ks kvs env
+              ) ind.ind_consarities.(i-1) bs)
+       with Not_found -> failwith "")
     | _ -> msg_error (Printer.pr_constr c); EUnknown
 
 
@@ -176,13 +221,17 @@ and extract_one_inductive_constructors env kn mib i mip =
   let (ind,u), ctx = Universes.fresh_inductive_instance env (kn,i) in
   let types = arities_of_constructors env ((kn,i),u) in
   Array.iter (fun x -> msg_info (str "Constructor signature : " ++ Printer.pr_constr x)) types;
-  let consnames =  Array.map (fun s -> find_constrname (String.capitalize (Names.Id.to_string s))) mip.mind_consnames in
+  let consarities = Array.map (extract_type_constructor_arities (kn,i) env) types in
+  let consnames = Array.map (fun s -> find_constrname (String.capitalize (Names.Id.to_string s))) mip.mind_consnames in
   let constypes = Array.map (extract_type_singleton (Some (kn,i)) V_empty Empty.absurd [] env) types in
   let conscts = Array.mapi (fun j c -> let n = Hs_pconstrname ((kn,i),j) in
                              n, constructor_mk_constant n c) constypes in
+  let consects = Array.mapi (fun j (_, c) ->
+                              ((kn,i),j)
+                            , constructor_mk_econstant (KConst c) (Hs_sconstrname ((kn, i), j)) consarities.(j)
+                            ) conscts in
   let sconstypes = Array.mapi (fun j c -> singleton_constructor V_empty Empty.absurd
                                   (TyConst (Hs_pconstrname ((kn, i), j))) c) constypes in
-  let consarities = Array.map (extract_type_constructor_arities (kn,i) env) types in
   state := { !state with
              st_inductives =
                Indmap.modify
@@ -192,16 +241,19 @@ and extract_one_inductive_constructors env kn mib i mip =
                                     ; ind_sconstypes = sconstypes
                                     ; ind_consarities = consarities })
                  !state.st_inductives
+           ; st_ssconstrs =
+               Array.fold_left (fun acc (k, v) -> Constrmap.add k v acc) !state.st_ssconstrs consects
+           ; st_list =
+               Array.fold_left (fun acc (k, _) -> Hs_ssconstr k :: acc) !state.st_list consects
            ; st_defunctionalise_const_map =
                Array.fold_left (fun acc (k, v) -> Namemap.add k v acc) !state.st_defunctionalise_const_map conscts
-
            }
 
 let rec extract_constant env kn =
   let cb = Environ.lookup_constant kn env in
   let k, e = match cb.const_body with
     | Def a -> extract_kind None V_empty Empty.absurd [] env (Mod_subst.force_constr a)
-             , extract_term V_empty [] V_empty env (Mod_subst.force_constr a)
+             , extract_term V_empty [] V_empty Empty.absurd [] env (Mod_subst.force_constr a)
     | _     -> msg_error (Names.Constant.print kn); KUnknown, EUnknown in
   state := { !state with
              st_constants =
@@ -275,6 +327,7 @@ let out () =
         | Hs_typefamily a -> pr_hs_type_family (Stringmap.find a !state.st_typefamilies)
         | Hs_tyarr a -> pr_hs_type_family (Stringmap.find a !state.st_tyarrs)
         | Hs_typi a -> pr_hs_type_family (Stringmap.find a !state.st_typis)
+        | Hs_ssconstr a -> pr_hs_constant (Constrmap.find a !state.st_ssconstrs)
       ) i (acc ++ pr_th_hack ())
       ) (List.rev (sort_elems !state.st_list)) (mt ()));
   close_out cout

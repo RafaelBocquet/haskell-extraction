@@ -27,6 +27,12 @@ module Either = struct
     | Right a -> g a
   let left x = Left x
   let right x = Right x
+  let map_left f = function
+    | Left x -> Left (f x)
+    | Right y -> Right y
+  let map_right f = function
+    | Right x -> Right (f x)
+    | Left y -> Left y
 end
 
 (* pretty *)
