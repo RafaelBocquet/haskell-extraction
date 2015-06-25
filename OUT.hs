@@ -48,76 +48,76 @@ data Nat :: * where
   O ::   Nat
   S ::   Nat -> Nat
 $(P.return [])
-data instance Sing Nat d where
+data C (c :: TyFun' Nat *)
+$(P.return [])
+type instance (@@) C d = Nat
+$(P.return [])
+data K (e :: TyPi' Nat C)
+$(P.return [])
+type family D  :: TyPi Nat C where
+   D  = K
+$(P.return [])
+aaa :: Sing' {- KIND -} D
+aaa = P.undefined
+
+$(P.return [])
+data P (f :: TyPi' Nat C)
+$(P.return [])
+type family E  :: TyPi Nat C where
+   E  = P
+$(P.return [])
+data G (h :: Nat) (g :: TyFun' Nat *)
+$(P.return [])
+type instance (@@) (G j) i = *
+$(P.return [])
+data L (l :: Nat) (k :: TyPi' Nat (G l))
+$(P.return [])
+data I (n :: Nat) (m :: TyFun' Nat *)
+$(P.return [])
+type instance (@@) (I p) o = Nat
+$(P.return [])
+data M (r :: Nat) (q :: TyPi' Nat (I r))
+$(P.return [])
+type instance (@@@) (L t) s = Nat
+$(P.return [])
+type instance (@@@) (M v) u = 'S (E @@@ u)
+$(P.return [])
+type family N (aa :: Nat) (z :: Nat)  :: Nat where
+   N w 'O = 'O
+   N y ('S x) = M y @@@ x
+$(P.return [])
+type instance (@@@) P ab = N ab ab
+$(P.return [])
+data F (ad :: Nat) (ac :: TyPi' Nat (G ad))
+$(P.return [])
+data H (af :: Nat) (ae :: TyPi' Nat (I af))
+$(P.return [])
+type instance (@@@) (F ah) ag = Nat
+$(P.return [])
+type instance (@@@) (H aj) ai = 'S (D @@@ ai)
+$(P.return [])
+type family J (ao :: Nat) (an :: Nat)  :: Nat where
+   J ak 'O = 'O
+   J am ('S al) = H am @@@ al
+$(P.return [])
+type instance (@@@) K ap = J ap ap
+$(P.return [])
+data instance Sing Nat ar where
   SO ::   Sing' 'O
-  SS ::   forall (c :: Nat). (Sing Nat c) -> Sing' ('S c)
+  SS ::   forall (aq :: Nat). (Sing Nat aq) -> Sing' ('S aq)
 $(P.return [])
-data I (e :: TyFun' Nat *)
+data B (as :: TyFun' Nat *)
 $(P.return [])
-type instance (@@) I f = Nat
+type instance (@@) B at = Nat
 $(P.return [])
-data H (g :: TyPi' Nat I)
-$(P.return [])
-data F (i :: Nat) (h :: TyFun' Nat *)
-$(P.return [])
-type instance (@@) (F k) j = Nat
-$(P.return [])
-data J (m :: Nat) (l :: TyPi' Nat (F m))
-$(P.return [])
-data N (n :: TyPi' Nat I)
-$(P.return [])
-$(P.return [])
-data D (w :: Nat) (v :: TyFun' Nat *)
-$(P.return [])
-type instance (@@) (D y) x = *
-$(P.return [])
-data K (aa :: Nat) (z :: TyPi' Nat (D aa))
-$(P.return [])
-data L (ac :: Nat) (ab :: TyPi' Nat (F ac))
-$(P.return [])
-type instance (@@@) (K ae) ad = Nat
-$(P.return [])
-type instance (@@@) (L ag) af = 'S ('S af)
-$(P.return [])
-type family M (al :: Nat) (ak :: Nat)  :: Nat where
-   M ah 'O = 'S 'O
-   M aj ('S ai) = L aj @@@ ai
-$(P.return [])
-type instance (@@@) N am = M am am
-$(P.return [])
-type instance (@@@) (J ao) an = 'S ('S an)
-$(P.return [])
-data C (aq :: Nat) (ap :: TyPi' Nat (D aq))
-$(P.return [])
-data E (as :: Nat) (ar :: TyPi' Nat (F as))
-$(P.return [])
-type instance (@@@) (C au) at = Nat
-$(P.return [])
-type instance (@@@) (E aw) av = 'S ('S av)
-$(P.return [])
-type family G (bb :: Nat) (ba :: Nat)  :: Nat where
-   G ax 'O = 'S 'O
-   G az ('S ay) = E az @@@ ay
-$(P.return [])
-type instance (@@@) H bc = G bc bc
-$(P.return [])
-data B (bd :: TyFun' Nat *)
-$(P.return [])
-type instance (@@) B be = Nat
-$(P.return [])
-data A (bf :: TyPi' Nat B)
+data A (au :: TyPi' Nat B)
 $(P.return [])
 b :: Sing' {- KIND -} A
-b = SLambda (\bg -> SS bg)
+b = SLambda (\av -> SS av)
 
 $(P.return [])
 a :: Sing' {- KIND -} 'O
 a = SO
 
 $(P.return [])
-type instance (@@@) A bh = 'S bh
-
-nS :: Sing' {- KIND -} N
-nS = let { o :: Sing' N; o = SLambda (\(q :: Sing Nat p) -> case q of { SO -> b `unSLambda` a; SS r -> let { s :: Sing'
-  (J p); s = SLambda (\(u :: Sing Nat t) -> b `unSLambda` (b `unSLambda` u))} in s `unSLambda` r })} in o
-
+type instance (@@@) A aw = 'S aw

@@ -5,14 +5,18 @@ Require Import
   Coq.Setoids.Setoid
   Coq.Vectors.Fin
   Coq.Vectors.VectorDef
-  Coq.Vectors.VectorSpec
-  .
+  Coq.Vectors.VectorSpec.
 
-Definition nS (n : nat) := match n with
-  | O => S O
-  | S n => S (S n)
-end
-.
+Fixpoint aaa n :=
+  match n with      
+    | O => O
+    | S n => S (bbb n)
+  end
+with bbb n :=
+       match n with
+         | O => O
+         | S n => S (aaa n)
+       end.
 
 Hextraction
   (* Coq.Init.Logic *)
@@ -27,5 +31,6 @@ Hextraction
   (* Coq.Setoids.Setoid *)
   (* Coq.Vectors.VectorDef *)
   (* Coq.Vectors.VectorSpec *)
-  , nat nS
+  , nat aaa
 .
+

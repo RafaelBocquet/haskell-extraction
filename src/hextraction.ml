@@ -25,28 +25,28 @@ open Minihs
 
 module Indmap = Minihs.Indmap
 
-let rec extract_type : type a. inductive option -> a svar -> (a -> a hs_kind) -> a option list -> Environ.env -> constr -> a hs_type =
+let rec extract_type : type a. inductive option -> a svar -> (a -> a hs_kind) -> a hs_kind option list -> Environ.env -> constr -> a hs_type =
   fun df v ks vs env c -> extract_type_signature df v ks vs env c
-and extract_kind : type a. inductive option -> a svar -> (a -> a hs_kind) -> a option list -> Environ.env -> constr -> a hs_kind =
+and extract_kind : type a. inductive option -> a svar -> (a -> a hs_kind) -> a hs_kind option list -> Environ.env -> constr -> a hs_kind =
   fun df v ks vs env c -> defunctionalise v ks (extract_type df v ks vs env c)
-and extract_type_singleton : type a. inductive option -> a svar -> (a -> a hs_kind) -> a option list -> Environ.env -> constr -> a hs_type =
+and extract_type_singleton : type a. inductive option -> a svar -> (a -> a hs_kind) -> a hs_kind option list -> Environ.env -> constr -> a hs_type =
   fun df v ks vs env c -> singletonise v ks (extract_type df v ks vs env c)
-and extract_type_signature : type a. inductive option -> a svar -> (a -> a hs_kind) -> a option list -> Environ.env -> constr -> a hs_type =
+and extract_type_signature : type a. inductive option -> a svar -> (a -> a hs_kind) -> a hs_kind option list -> Environ.env -> constr -> a hs_type =
   fun df v ks vs env c ->
     let cs, (envl, l) = signature_view env c in
-    let rec extract_type_signature' : type a. a svar -> (a -> a hs_kind) -> a option list -> (Environ.env * constr) list -> a hs_type =
+    let rec extract_type_signature' : type a. a svar -> (a -> a hs_kind) -> a hs_kind option list -> (Environ.env * constr) list -> a hs_type =
       fun v ks vs -> function
         | [] -> extract_type_application df v ks vs envl l
         | (env, c) :: cs when not (head_is_inductive df env c) ->
           let k = extract_kind df v ks vs env c in
           let t = TyForall ( k
-                           , extract_type_signature' (V_next v) (extend_kind_list (lift_kind k) ks) (Some None :: List.map (Option.map some) vs) cs)
+                           , extract_type_signature' (V_next v) (extend_kind_list (lift_kind k) ks) (Some (KVar None) :: List.map (Option.map lift_kind) vs) cs)
           in t
         | (env, c) :: cs ->
           TyArrow ( extract_type df v ks vs env c
                   , extract_type_signature' v ks (None :: vs) cs)
     in extract_type_signature' v ks vs cs
-and extract_type_application : type a. inductive option -> a svar -> (a -> a hs_kind) -> a option list -> Environ.env -> constr -> a hs_type =
+and extract_type_application : type a. inductive option -> a svar -> (a -> a hs_kind) -> a hs_kind option list -> Environ.env -> constr -> a hs_type =
   fun df v ks vs env c ->
     match application_view env c with
     | Sort _, [] -> TyStar
@@ -60,7 +60,7 @@ and extract_type_application : type a. inductive option -> a svar -> (a -> a hs_
       )
     | Rel x, bs when x <= List.length vs ->
       type_application
-        (TyKind (match List.nth vs (x-1) with | Some v -> KVar v | None -> msg_error (str "UNKNOWN VAR"); KUnknown))
+        (TyKind (match List.nth vs (x-1) with | Some v -> v | None -> msg_error (str "UNKNOWN VAR"); KUnknown))
         (List.map (extract_type df v ks vs env) bs)
     | Construct ((n,i),_), bs ->
       (try
@@ -72,14 +72,14 @@ and extract_type_application : type a. inductive option -> a svar -> (a -> a hs_
                 | true -> fun t -> TyToSing (extract_type df v ks vs env t)
                 | false -> extract_type df v ks vs env
               ) ind.ind_consarities.(i-1) bs)
-       with Not_found -> failwith "")
+       with Not_found -> failwith "Unknown construct")
     | Lambda (x, t, c), [] ->
       let env' = push_rel (x,None,t) env in
       let k = extract_kind df v ks vs env t in
-      let cty = extract_kind df (V_next v) (extend_kind_list (lift_kind k) ks) (Some None :: List.map (Option.map some) vs) env' (Retyping.get_type_of ~polyprop:true env' Evd.empty c) in
-      let c' = extract_kind df (V_next v) (extend_kind_list (lift_kind k) ks) (Some None :: List.map (Option.map some) vs) env' c in
+      let cty = extract_kind df (V_next v) (extend_kind_list (lift_kind k) ks) (Some (KVar None) :: List.map (Option.map lift_kind) vs) env' (Retyping.get_type_of ~polyprop:true env' Evd.empty c) in
+      let c' = extract_kind df (V_next v) (extend_kind_list (lift_kind k) ks) (Some (KVar None) :: List.map (Option.map lift_kind) vs) env' c in
       TyKind (defunctionalise_lambda v ks k cty c')
-    | Case (ci, creturn, a, bs), cs ->
+    | Case (ci, creturn, a, bs), [] ->
       (try
          let ind = Indmap.find ci.ci_ind !state.st_inductives in
          let a' = extract_kind df v ks vs env a in
@@ -98,24 +98,28 @@ and extract_type_application : type a. inductive option -> a svar -> (a -> a hs_
                     str "ts: " ++ prvect_with_sep fnl pr_hs_kind ts
                   ); TyKind (defunctionalise_match ind v ks a' t k ts)
        with Not_found -> failwith "TODO")
-    | h, _ -> msg_error (Printer.pr_constr c); TyUnknown
+    | Fix ((a, b), (c, d, e)), _ ->
+      let env' = push_rec_types (c, d, e) env in
+      let fks = Array.map (extract_kind df v ks vs env) d in
+      TyKind (defunctionalise_fix v ks fks (fun a -> Array.map (extract_kind df v ks (List.map some a @ vs) env') e) b)
+    | h, _ -> msg_error (str "Unknown type" ++ Printer.pr_constr c); TyUnknown
 
-and extract_term : type a b. a svar -> a option list -> b svar -> (b -> b hs_kind) -> b option list -> Environ.env -> constr -> (a, b) hs_expr =
+and extract_term : type a b. a svar -> a option list -> b svar -> (b -> b hs_kind) -> b hs_kind option list -> Environ.env -> constr -> (a, b) hs_expr =
   fun v vs v' ks kvs env t -> extract_term_application v vs v' ks kvs env t
-(* and extract_term_abstraction : type a b. a svar -> a option list -> b svar -> (b -> b hs_kind) -> b option list -> Environ.env -> constr -> (a, b) hs_expr = *)
+(* and extract_term_abstraction : type a b. a svar -> a option list -> b svar -> (b -> b hs_kind) -> b hs_kind option list -> Environ.env -> constr -> (a, b) hs_expr = *)
 (*   fun v vs v' ks kvs env t -> *)
 (*     let cs, (envl, l) = abstraction_view env t in *)
-(*     let rec extract_term_abstraction' : type a b. a svar -> a option list -> b svar -> (b -> b hs_kind) -> b option list -> (Environ.env * constr) list -> (a, b) hs_expr = *)
+(*     let rec extract_term_abstraction' : type a b. a svar -> a option list -> b svar -> (b -> b hs_kind) -> b hs_kind option list -> (Environ.env * constr) list -> (a, b) hs_expr = *)
 (*       fun v vs v' ks kvs -> function *)
 (*         | (env, c) :: cs -> *)
 (*           let k = extract_kind None v' ks kvs env c in *)
 (*           EForall *)
 (*             (EAbs ( Some (TySing (lift_kind k, None)) *)
-(*                   , extract_term_abstraction' (V_next v) (Some None :: List.map (Option.map some) vs) (V_next v') (extend_kind_list (lift_kind k) ks) (Some None :: List.map (Option.map some) kvs) cs *)
+(*                   , extract_term_abstraction' (V_next v) (Some (KVar None) :: List.map (Option.map lift_kind) vs) (V_next v') (extend_kind_list (lift_kind k) ks) (Some (KVar None) :: List.map (Option.map lift_kind) kvs) cs *)
 (*                   )) *)
 (*         | [] -> extract_term_application v vs v' ks kvs envl l *)
 (*     in extract_term_abstraction' v vs v' ks kvs cs *)
-and extract_term_application : type a b. a svar -> a option list -> b svar -> (b -> b hs_kind) -> b option list -> Environ.env -> constr -> (a, b) hs_expr =
+and extract_term_application : type a b. a svar -> a option list -> b svar -> (b -> b hs_kind) -> b hs_kind option list -> Environ.env -> constr -> (a, b) hs_expr =
   fun v vs v' ks kvs env c ->
     match application_view env c with
     | Prod (_, _, _), [] -> EStar
@@ -126,7 +130,7 @@ and extract_term_application : type a b. a svar -> a option list -> b svar -> (b
       EForall
         ( Some k1
         , EAbs ( Some (TySing (lift_kind k, None))
-               , extract_term (V_next v) (Some None :: List.map (Option.map some) vs) (V_next v') (extend_kind_list (lift_kind k) ks) (Some None :: List.map (Option.map some) kvs) env' c'
+               , extract_term (V_next v) (Some None :: List.map (Option.map some) vs) (V_next v') (extend_kind_list (lift_kind k) ks) (Some (KVar None) :: List.map (Option.map lift_kind) kvs) env' c'
                ))
     | Rel x, bs when x <= List.length vs ->
       expr_fun_application
@@ -161,8 +165,8 @@ and extract_term_application : type a b. a svar -> a option list -> b svar -> (b
                 | true -> fun t -> extract_term v vs v' ks kvs env t
                 | false -> extract_term v vs v' ks kvs env
               ) ind.ind_consarities.(i-1) bs)
-       with Not_found -> failwith "")
-    | _ -> msg_error (Printer.pr_constr c); EUnknown
+       with Not_found -> failwith "Unknown Construct")
+    | _ -> EUnknown
 
 
 let rec extract_type_constructor_arities : type a. inductive -> Environ.env -> constr -> bool list =
@@ -179,11 +183,11 @@ and extract_type_constructor_arities_signature : type a. inductive -> Environ.en
 
 let rec extract_signature df env c =
   let cs, (envl, l) = signature_view env c in
-  let rec extract_signature' : type a. a svar -> (a -> a hs_kind) -> a option list -> (Environ.env * constr) list -> a any_hs_kind_signature = fun v ks vs -> function
+  let rec extract_signature' : type a. a svar -> (a -> a hs_kind) -> a hs_kind option list -> (Environ.env * constr) list -> a any_hs_kind_signature = fun v ks vs -> function
     | [] -> Any_kind_signature (KSig_empty (extract_kind df v ks vs envl l))
     | (env, c) :: cs ->
       let k = extract_kind df v ks vs env c in
-      let Any_kind_signature s = extract_signature' (V_next v) (extend_kind_list (lift_kind k) ks) (Some None :: List.map (Option.map some) vs) cs in
+      let Any_kind_signature s = extract_signature' (V_next v) (extend_kind_list (lift_kind k) ks) (Some (KVar None) :: List.map (Option.map lift_kind) vs) cs in
       Any_kind_signature (KSig_next (k, s))
   in
   extract_signature' V_empty Empty.absurd [] cs
@@ -254,7 +258,7 @@ let rec extract_constant env kn =
   let k, e = match cb.const_body with
     | Def a -> extract_kind None V_empty Empty.absurd [] env (Mod_subst.force_constr a)
              , extract_term V_empty [] V_empty Empty.absurd [] env (Mod_subst.force_constr a)
-    | _     -> msg_error (Names.Constant.print kn); KUnknown, EUnknown in
+    | _     -> msg_error (str "Opaque constant ? " ++ Names.Constant.print kn); KUnknown, EUnknown in
   state := { !state with
              st_constants =
                Cmap.add

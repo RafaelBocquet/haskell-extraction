@@ -491,7 +491,7 @@ and reduce_kind' : type a. a hs_kind -> a hs_kind list -> a hs_kind list -> a hs
     | KConst s, c :: cs ->
       (try let n, l = Namemap.find s !state.st_reductions in
          reduce_kind' (KConst n) (List.map snd (List.filter fst (List.combine l (bs @ [c])))) cs
-       with Not_found -> kind_fun_application (kind_application k bs) (c :: cs)
+       with Not_found | Invalid_argument _ -> kind_fun_application (kind_application k bs) (c :: cs)
       )
     | _ -> kind_fun_application (kind_application k bs) cs
 
@@ -530,7 +530,6 @@ and mk_constant : type a b. hs_name -> a svar -> (a -> bool) -> (a -> a hs_kind)
                                        (KConst n')
                                         (List.map lift_kind vl' @ [KVar None])))
                } in
-      msg_error (str na);
       state := { !state with
                  st_symbols =
                    Stringmap.add na sa
@@ -587,7 +586,6 @@ and defunctionalise_match : type a. hs_ind -> a svar -> (a -> a hs_kind) -> a hs
       let k' = kind_application
           (KConst (Hs_tfname ta))
           (List.map (fun v -> KVar v) (List.rev vl)) in
-    msg_error (str ta);
     state := { !state with
                st_typefamilies =
                  Stringmap.add ta tf !state.st_typefamilies
@@ -595,17 +593,40 @@ and defunctionalise_match : type a. hs_ind -> a svar -> (a -> a hs_kind) -> a hs
                  Hs_typefamily ta ::
                  !state.st_list
              }; KApp (k', a)
-
+and defunctionalise_fix : type a. a svar -> (a -> a hs_kind) -> a hs_kind array -> (a hs_kind list -> a hs_kind array) -> int -> a hs_kind =
+  fun v vs ks f i ->
+    let ns = Array.map (fun _ -> mk_tid ()) ks in
+    let vl = var_list v in
+    let fs = f (List.map (fun n -> kind_application (KConst (Hs_tfname n)) (List.map (fun v -> KVar v) vl)) (Array.to_list ns)) in
+    let ts = Array.mapi (fun i k ->
+        { tf_name = ns.(i)
+        ; tf_signature = Some (Any_type_family_signature (v, vs, ks.(i)))
+        ; tf_closed = true
+        ; tf_equations = Array.make 1
+              (Any_equation
+                 ( v
+                 , List.map (fun v -> KVar v) vl
+                 , fs.(i)
+                 ))
+        }
+      ) ks in
+    state := { !state with
+               st_typefamilies =
+                 Array.fold_left (fun acc tf -> Stringmap.add tf.tf_name tf acc) !state.st_typefamilies ts
+             ; st_list =
+                 Array.fold_left (fun acc tf -> Hs_typefamily tf.tf_name :: acc) !state.st_list ts
+             };
+    kind_application (KConst (Hs_tfname ns.(i))) (List.map (fun v -> KVar v) vl)
 and defunctionalise_lambda : type a. a svar -> (a -> a hs_kind) -> a hs_kind -> a option hs_kind -> a option hs_kind -> a hs_kind =
   fun v vs k t a ->
     let na = mk_tid () in
     let vl = var_list v in
-    let sa = Any_symbol (na, V_next v, Option.cata (rmap lift_kind vs) (lift_kind (KPi' (k, defunctionalise_pi v vs k (TyKind t))))) in
+    let sa = Any_symbol (na, V_next v, rmap lift_kind (Option.cata vs (KPi' (k, defunctionalise_pi v vs k (TyKind t))))) in
     let ta = { tf_signature = None
              ; tf_name      = "(@@@)"
              ; tf_closed    = false
              ; tf_equations = Array.make 1
-                   (Any_equation (V_next v
+                   (Any_equation ( V_next v
                                  , [kind_application
                                       (KConst (Hs_symbolname na))
                                       (List.map (fun v -> KVar (Some v)) (List.rev vl))
