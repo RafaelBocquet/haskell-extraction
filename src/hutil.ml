@@ -8,6 +8,7 @@ open Reduction
 open Reductionops
 
 let id x = x
+let const x y = x
 let cons x xs = x :: xs
 let some x = Some x
 let rmap f g = fun x -> f (g x)

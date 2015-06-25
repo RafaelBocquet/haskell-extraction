@@ -20,18 +20,18 @@ let keywords = [ "if"; "of"; "in"; "do"
                ; "fromSing" ; "sing"
                ; "Sing"; "ToSing"; "FromSing"; "TyArr"; "TyFun"; "TyPi"
                ]
-type 'a hs_type =
-  | TyStar
-  | TyVar of 'a
-  | TyApp of 'a hs_type * 'a hs_type
-  | TyForall of 'a hs_kind * 'a option hs_type
-  | TyArrow of 'a hs_type * 'a hs_type
-  | TyConst of hs_name
-  | TyKind of 'a hs_kind
-  | TyToSing of 'a hs_type
-  | TySing of 'a hs_kind * 'a
-  | TyUnknown
-and 'a hs_kind =
+(* type 'a hs_type = *)
+(*   | TyStar *)
+(*   | TyVar of 'a *)
+(*   | TyApp of 'a hs_type * 'a hs_type *)
+(*   | TyForall of 'a hs_kind * 'a option hs_type *)
+(*   | TyArrow of 'a hs_type * 'a hs_type *)
+(*   | TyConst of hs_name *)
+(*   | TyKind of 'a hs_kind *)
+(*   | TyToSing of 'a hs_type *)
+(*   | TySing of 'a hs_kind * 'a *)
+(*   | TyUnknown *)
+type 'a hs_kind =
   | KStar
   | KVar of 'a
   | KApp of 'a hs_kind * 'a hs_kind
@@ -45,13 +45,15 @@ and 'a hs_kind =
   | KConst of hs_name
   | KSing of 'a hs_kind * 'a
   | KUnknown
+and 'a hs_constructor =
+  | Hs_constructor : ('a, 'b) hs_kind_signature * 'b hs_kind list -> 'a hs_constructor
 and any_hs_kind =
   | Any_kind : 'a svar * 'a hs_kind -> any_hs_kind
-and ('a, 'b) hs_signature =
-  | Sig_empty : 'b hs_type -> ('b, 'b) hs_signature
-  | Sig_next : 'a hs_kind * ('a option, 'b) hs_signature -> ('a, 'b) hs_signature
-and 'a any_hs_signature =
-  | Any_signature : ('a, 'b) hs_signature -> 'a any_hs_signature
+(* and ('a, 'b) hs_signature = *)
+(*   | Sig_empty : 'b hs_type -> ('b, 'b) hs_signature *)
+(*   | Sig_next : 'a hs_kind * ('a option, 'b) hs_signature -> ('a, 'b) hs_signature *)
+(* and 'a any_hs_signature = *)
+(*   | Any_signature : ('a, 'b) hs_signature -> 'a any_hs_signature *)
 and ('a, 'b) hs_kind_signature =
   | KSig_empty : 'b hs_kind -> ('b, 'b) hs_kind_signature
   | KSig_next : 'a hs_kind * ('a option, 'b) hs_kind_signature -> ('a, 'b) hs_kind_signature
@@ -75,8 +77,8 @@ and hs_ind =
   ; ind_printname : string
   ; ind_signature : Empty.t any_hs_kind_signature
   ; ind_consnames : string array
-  ; ind_constypes : Empty.t hs_type array
-  ; ind_sconstypes : Empty.t hs_type array
+  ; ind_constypes : Empty.t hs_constructor array
+  (* ; ind_sconstypes : Empty.t hs_type array *)
   ; ind_consarities : bool list array
   }
 and any_hs_type_family_signature =
@@ -92,7 +94,7 @@ and ('a, 'b) hs_expr =
   | EStar
   | EApp of ('a, 'b) hs_expr * ('a, 'b) hs_expr
   | EFunapp of ('a, 'b) hs_expr * ('a, 'b) hs_expr
-  | EAbs of 'b hs_type option * ('a option, 'b) hs_expr
+  | EAbs of 'b hs_kind option * ('a option, 'b) hs_expr
   | EForall of 'b hs_kind option * ('a, 'b option) hs_expr
   | ECase of ('a, 'b) hs_expr * ('a, 'b) hs_match array
   | EConst of hs_name
@@ -109,7 +111,7 @@ and any_hs_con_pattern =
   | Any_con_pattern : 'c hs_con_pattern * 'c list -> any_hs_con_pattern
 and hs_constant =
   { const_name : string
-  ; const_type : Empty.t hs_type
+  ; const_type : Empty.t hs_kind
   ; const_expr : (Empty.t, Empty.t) hs_expr
   }
 and hs_symbol =
@@ -352,24 +354,12 @@ let rec map_kind : type a b. (a -> b) -> a hs_kind -> b hs_kind = fun f -> funct
   | KConst s -> KConst s
   | KUnknown -> KUnknown
 
-let rec map_type : type a b. (a -> b) -> a hs_type -> b hs_type = fun f -> function
-  | TyStar -> TyStar
-  | TyVar x -> TyVar (f x)
-  | TyApp (a, b) -> TyApp (map_type f a, map_type f b)
-  | TyArrow (a, b) -> TyArrow (map_type f a, map_type f b)
-  | TyForall (k, a) -> TyForall (map_kind f k, map_type (Option.map f) a)
-  | TyConst s -> TyConst s
-  | TySing (k, a) -> TySing (map_kind f k, f a)
-  | TyToSing k -> TyToSing (map_type f k)
-  | TyKind k -> TyKind (map_kind f k)
-  | TyUnknown -> TyUnknown
-
 let rec map_expr : type a b c d. (a -> b) -> (c -> d) -> (a, c) hs_expr -> (b, d) hs_expr = fun f g -> function
   | EStar -> EStar
   | EVar x -> EVar (f x)
   | EApp (a, b) -> EApp (map_expr f g a, map_expr f g b)
   | EFunapp (a, b) -> EFunapp (map_expr f g a, map_expr f g b)
-  | EAbs (k, a) -> EAbs (Option.map (map_type g) k, map_expr (Option.map f) g a)
+  | EAbs (k, a) -> EAbs (Option.map (map_kind g) k, map_expr (Option.map f) g a)
   | EForall (k, a) -> EForall (Option.map (map_kind g) k, map_expr f (Option.map g) a)
   | EUnknown -> EUnknown
   | EConst n -> EConst n
@@ -378,87 +368,27 @@ and map_case : type a b c d. (a -> b) -> (c -> d) -> (a, c) hs_match -> (b, d) h
   | Any_match (p, e) -> Any_match (p, map_expr (Either.map_left f) g e)
 
 let lift_kind : type a. a hs_kind -> a option hs_kind = fun ty -> map_kind (fun x -> Some x) ty
-let lift_type : type a. a hs_type -> a option hs_type = fun ty -> map_type (fun x -> Some x) ty
 
 let extend_kind_list : type a. a option hs_kind -> (a -> a hs_kind) -> (a option -> a option hs_kind) =
   fun k f -> Option.cata (fun x -> lift_kind (f x)) k
 
-
-(* let rec bind_kind : type a b. (a -> b hs_kind) -> a hs_kind -> b hs_kind = fun f -> function *)
-(*   | KStar -> KStar *)
-(*   | KVar x -> f x *)
-(*   | KApp (a, b) -> KApp (bind_kind f a, bind_kind f b) *)
-(*   | KArrow (a, b) -> KArrow (bind_kind f a, bind_kind f b) *)
-(*   | KPi (k, a) -> KPi (bind_kind f k, bind_kind f a) *)
-(*   | KConst s -> KConst s *)
-(*   | KUnknown -> KUnknown *)
-
-(* let rec bind_type : type a b. (a -> b hs_type) -> a hs_type -> b hs_type = fun f -> function *)
-(*   | TyStar -> TyStar *)
-(*   | TyVar x -> f x *)
-(*   | TyApp (a, b) -> TyApp (bind_type f a, bind_type f b) *)
-(*   | TyArrow (a, b) -> TyArrow (bind_type f a, bind_type f b) *)
-(*   | TyForall (k, a) -> TyForall (bind_kind f k, bind_type (Option.cata (fun x -> lift_type (f x)) (TyVar None)) a) *)
-(*   | TyConst s -> TyConst s *)
-(*   | TyUnknown -> TyUnknown *)
-
-(* let subst_type : type a. a hs_type -> a option hs_type -> a hs_type = fun a b -> bind_type (Option.cata (fun x -> TyVar x) a) b *)
-
-let rec signature_last : type a b. (a, b) hs_signature -> b hs_type = function
-  | Sig_empty a -> a
-  | Sig_next (_, a) -> signature_last a
+let rec var_of_kind_signature : type a b. (a, b) hs_kind_signature -> a svar -> b svar = function
+  | KSig_empty _ -> id
+  | KSig_next (_,s) -> fun v -> var_of_kind_signature s (V_next v)
 
 let rec fold_left_kind_signature : type a b c z. (unit -> b) -> (a -> b -> a) -> a -> (c, z) hs_kind_signature -> a =
   fun f g a -> function
     | KSig_empty _ -> a
     | KSig_next (_, s) -> fold_left_kind_signature f g (g a (f ())) s
 
-let rec fold_left_signature : type a b c z. (unit -> b) -> (a -> b -> a) -> a -> (c, z) hs_signature -> a =
-  fun f g a -> function
-    | Sig_empty _ -> a
-    | Sig_next (_, s) -> fold_left_signature f g (g a (f ())) s
+let rec lift_of_kind_signature : type a b. (a, b) hs_kind_signature -> (a -> b) = function
+  | KSig_empty _ -> id
+  | KSig_next (_, s) -> rmap (lift_of_kind_signature s) some
 
-let rec map_signature : type a b. (b hs_type -> b hs_type) -> (a, b) hs_signature -> (a, b) hs_signature =
-  fun f -> function
-    | Sig_empty x -> Sig_empty (f x)
-    | Sig_next (x, s) -> Sig_next (x, map_signature f s)
-
-let rec lift_type_signature : type a b. (a, b) hs_signature -> a hs_type -> b hs_type = function
-  | Sig_empty _ -> fun x -> x
-  | Sig_next (_, s) -> fun x -> lift_type_signature s (lift_type x)
-
-let type_application f args = List.fold_left (fun x y -> TyApp (x, y)) f args
 let kind_application f args = List.fold_left (fun x y -> KApp (x, y)) f args
 let kind_fun_application f args = List.fold_left (fun x y -> KFunapp (x, y)) f args
 let expr_application f args = List.fold_left (fun x y -> EApp (x, y)) f args
 let expr_fun_application f args = List.fold_left (fun x y -> EFunapp (x, y)) f args
-
-let rec view_type_signature : type a b. a hs_type -> a any_hs_signature =
-  fun ty -> match ty with
-    | TyStar | TyVar _ | TyConst _ | TyApp _ | TyKind _ | TyUnknown | TySing _ | TyToSing _ ->
-      Any_signature (Sig_empty ty)
-    | TyArrow (a, b) ->
-      let Any_signature sb = view_type_signature b in
-      Any_signature (map_signature (fun b -> TyArrow (lift_type_signature sb a, b)) sb)
-    | TyForall (k, a) ->
-      let Any_signature sa = view_type_signature a in
-      Any_signature (Sig_next (k, sa))
-
-let rec view_type_arrow : type a. a hs_type -> a hs_type list * a hs_type =
-  fun ty -> match ty with
-    | TyArrow (a, b) ->
-      let xs, l = view_type_arrow b in
-      a :: xs, l
-    | TyStar | TyVar _ | TyConst _ | TyApp _ | TyUnknown | TyForall _ | TyKind _ | TySing _ | TyToSing _ ->
-      [], ty
-let rec view_type_application' : type a. a hs_type -> a hs_type list -> a hs_type * a hs_type list =
-  fun ty acc -> match ty with
-    | TyApp (a, b) ->
-      view_type_application' a (b :: acc)
-    | TyStar | TyVar _ | TyConst _ | TyArrow _ | TyUnknown | TyForall _ | TyKind _ | TySing _ | TyToSing _ ->
-       ty, acc
-and view_type_application : type a. a hs_type -> a hs_type * a hs_type list =
-  fun ty -> view_type_application' ty []
 
 let rec view_kind_application' : type a. a hs_kind -> a hs_kind list -> a hs_kind * a hs_kind list =
   fun k acc -> match k, acc with
@@ -475,11 +405,6 @@ let rec view_kind_fun_application' : type a. a hs_kind -> a hs_kind list -> a hs
     | _ -> k, acc
 and view_kind_fun_application : type a. a hs_kind -> a hs_kind * a hs_kind list =
   fun k -> view_kind_fun_application' k []
-
-let rec type_arity : type a. a hs_type -> int = fun t ->
-  let Any_signature s = view_type_signature t in
-  List.length (fst (view_type_arrow (signature_last s)))
-
 
 let rec reduce_kind : type a. a hs_kind -> a hs_kind =
   fun k ->
@@ -548,18 +473,18 @@ and mk_constant : type a b. hs_name -> a svar -> (a -> bool) -> (a -> a hs_kind)
       Hs_symbolname na,
       KPi (k, kb)
 
-and defunctionalise : type a. a svar -> (a -> a hs_kind) -> a hs_type -> a hs_kind =
-  fun v vs -> function
-    | TyStar -> KStar
-    | TyForall (k, a) -> KPi (k, defunctionalise_pi v vs k a)
-    | TyVar v -> KVar v
-    | TyApp (a, b) -> KFunapp (defunctionalise v vs a, defunctionalise v vs b)
-    | TyKind k -> k
-    | TyConst s -> KConst (defunctionalise_const s)
-    | TySing (a, b) -> KSing (a, b)
-    | TyToSing t -> KToSing (defunctionalise v vs t)
-    | TyArrow (a, b) -> KArrow (defunctionalise v vs a, defunctionalise v vs b)
-    | t -> msg_error (str "DEFUN : " ++ pr_hs_type t); KUnknown
+(* and defunctionalise : type a. a svar -> (a -> a hs_kind) -> a hs_type -> a hs_kind = *)
+(*   fun v vs -> function *)
+(*     | TyStar -> KStar *)
+(*     | TyForall (k, a) -> KPi (k, defunctionalise_pi v vs k (defunctionalise (V_next v) (extend_kind_list (lift_kind k) vs) a)) *)
+(*     | TyVar v -> KVar v *)
+(*     | TyApp (a, b) -> KFunapp (defunctionalise v vs a, defunctionalise v vs b) *)
+(*     | TyKind k -> k *)
+(*     | TyConst s -> KConst (defunctionalise_const s) *)
+(*     | TySing (a, b) -> KSing (a, b) *)
+(*     | TyToSing t -> KToSing (defunctionalise v vs t) *)
+(*     | TyArrow (a, b) -> KArrow (defunctionalise v vs a, defunctionalise v vs b) *)
+(*     | t -> msg_error (str "DEFUN : " ++ pr_hs_type t); KUnknown *)
 and defunctionalise_match : type a. hs_ind -> a svar -> (a -> a hs_kind) -> a hs_kind -> a hs_kind -> a hs_kind -> a hs_kind array -> a hs_kind =
   fun ind v vs a at t bs ->
     let ta = mk_tid () in
@@ -621,7 +546,7 @@ and defunctionalise_lambda : type a. a svar -> (a -> a hs_kind) -> a hs_kind -> 
   fun v vs k t a ->
     let na = mk_tid () in
     let vl = var_list v in
-    let sa = Any_symbol (na, V_next v, rmap lift_kind (Option.cata vs (KPi' (k, defunctionalise_pi v vs k (TyKind t))))) in
+    let sa = Any_symbol (na, V_next v, rmap lift_kind (Option.cata vs (KPi' (k, defunctionalise_pi v vs k t)))) in
     let ta = { tf_signature = None
              ; tf_name      = "(@@@)"
              ; tf_closed    = false
@@ -645,10 +570,9 @@ and defunctionalise_lambda : type a. a svar -> (a -> a hs_kind) -> a hs_kind -> 
                  Hs_symbol na :: Hs_typi na ::
                  !state.st_list
              }; k'
-and defunctionalise_pi : type a. a svar -> (a -> a hs_kind) -> a hs_kind -> a option hs_type -> a hs_kind =
+and defunctionalise_pi : type a. a svar -> (a -> a hs_kind) -> a hs_kind -> a option hs_kind -> a hs_kind =
   fun v vs k a ->
-    let a' = defunctionalise (V_next v) (extend_kind_list (lift_kind k) vs) a in
-    try let Any_kind (v', k') = DefunMap.find (DefunOrdered.T (v, vs, k, a')) !state.st_defunctionalise_map in
+    try let Any_kind (v', k') = DefunMap.find (DefunOrdered.T (v, vs, k, a)) !state.st_defunctionalise_map in
       (match svar_dec_eq v v' with
        | Some Refl -> k'
        | None -> failwith "impossible")
@@ -665,7 +589,7 @@ and defunctionalise_pi : type a. a svar -> (a -> a hs_kind) -> a hs_kind -> a op
                                         (KConst (Hs_symbolname nb))
                                         (List.map (fun v -> KVar (Some v)) (List.rev vl))
                                      ; KVar None]
-                                   , a'))
+                                   , a))
                } in
       let k' = kind_application
           (KConst (Hs_symbolname nb))
@@ -679,99 +603,109 @@ and defunctionalise_pi : type a. a svar -> (a -> a hs_kind) -> a hs_kind -> a op
                    Hs_symbol nb :: Hs_tyarr nb ::
                    !state.st_list
                ; st_defunctionalise_map =
-                   DefunMap.add (DefunOrdered.T (v, vs, k, a')) (Any_kind (v, k')) !state.st_defunctionalise_map
+                   DefunMap.add (DefunOrdered.T (v, vs, k, a)) (Any_kind (v, k')) !state.st_defunctionalise_map
                }; k'
 and defunctionalise_const : hs_name -> hs_name =
   fun n ->
     try Namemap.find n !state.st_defunctionalise_const_map
     with Not_found -> msg_error (str "No constant for : " ++ pr_hs_name n); failwith ""
 
-and singletonise :  type a. a svar -> (a -> a hs_kind) -> a hs_type -> a hs_type =
-  fun v vs ty ->
-    let Any_signature s = view_type_signature ty in
-    singletonise_signature v vs s
-and singletonise_signature : type a b. a svar -> (a -> a hs_kind) -> (a, b) hs_signature -> a hs_type =
-  fun v vs -> function
-    | Sig_empty t ->
-      let xs, r = view_type_arrow t in
-      singletonise_arrow v vs xs r
-    | Sig_next (KSing (k, k'), t) ->
-      TyForall ( KSing (k, k')
-               , TyArrow ( TySing (lift_kind k, Some k')
-                         , singletonise_signature (V_next v) (extend_kind_list KUnknown vs) t))
-    | Sig_next (k, t) ->
-      TyForall ( k
-               , TyArrow ( TySing (lift_kind k, None)
-                         , singletonise_signature (V_next v) (extend_kind_list KUnknown vs) t))
-and singletonise_arrow : type a b. a svar -> (a -> a hs_kind) -> a hs_type list -> a hs_type -> a hs_type =
-  fun v vs -> function
-    | [] -> fun t ->
-      let r, xs = view_type_application t in
-      type_application r (List.map (singletonise v vs) xs)
-    | x :: xs -> fun t ->
-      TyArrow (singletonise v vs x, singletonise_arrow v vs xs t)
+and singletonise : type a. constructor -> a hs_constructor -> a hs_constructor =
+  fun ((i, _) as n) -> function
+    | Hs_constructor (KSig_empty k, l) ->
+      let rec singletonise' : type a. a hs_kind -> a hs_kind list -> a hs_constructor =
+        fun k -> function
+          | [] -> Hs_constructor (KSig_empty (KApp (KConst (Hs_sdataname i), k)), [])
+          | (KSing (_, v) as t) :: ts ->
+            let Hs_constructor (s, ts') = singletonise' (KApp (k, KVar v)) ts in
+            Hs_constructor (s, map_kind (lift_of_kind_signature s) t :: ts')
+          | t :: ts ->
+            let Hs_constructor (s, ts') = singletonise' (KApp (lift_kind k, KVar None)) (List.map lift_kind ts) in
+            Hs_constructor (KSig_next (t, s), map_kind (lift_of_kind_signature s) (KSing (lift_kind t, None)) :: ts')
+      in singletonise' (KConst (Hs_pconstrname n)) l
+    | Hs_constructor (KSig_next (k, s), ts) ->
+      let Hs_constructor (s', ts') = singletonise n (Hs_constructor (s, ts)) in
+      Hs_constructor (KSig_next (k, s'), ts')
 
-and constructor_mk_econstant : Empty.t hs_kind -> hs_name -> bool list -> hs_constant =
-  fun k n l -> { const_name = mk_id ()
-               ; const_type = TyKind k
-               ; const_expr = constructor_mk_econstant_expr (EConst n) l
-               }
-and constructor_mk_econstant_expr : type a b. (a, b) hs_expr -> bool list -> (a, b) hs_expr
-  = fun e -> function
-    | [] -> e
-    | x :: xs -> EAbs (None, constructor_mk_econstant_expr (EApp (map_expr some id e, EVar None)) xs)
+and constructor_mk_constant : type a. a svar -> (a -> a hs_kind) -> constructor -> a hs_constructor -> hs_name =
+  fun v vs ((i, _) as n) -> function
+    | Hs_constructor (KSig_empty k, l) ->
+      let rec constructor_mk_constant' : type a. a hs_kind -> a hs_kind list -> a any_hs_kind_signature = 
+        fun k -> function
+          | [] -> Any_kind_signature (KSig_empty k)
+          (* | (KSing (_, v) as t) :: ts -> constructor_mk_constant' (KApp (k, KVar v)) ts *)
+          | t :: ts ->
+            let Any_kind_signature s = constructor_mk_constant' (KApp (lift_kind k, KVar None)) (List.map lift_kind ts) in
+            Any_kind_signature (KSig_next (t, s))
+      in
+      let Any_kind_signature s = constructor_mk_constant' k l in
+      let (_, c, _) = mk_constant (Hs_pconstrname n) v (const true) vs s in
+      c
+      (* constructor_mk_constant' (KConst (Hs_pconstrname n)) l; *)
+    | Hs_constructor (KSig_next (k, s), ts) ->
+      constructor_mk_constant (V_next v) (extend_kind_list (lift_kind k) vs) n (Hs_constructor (s, ts))
 
-and constructor_mk_constant : type a. hs_name -> Empty.t hs_type -> hs_name =
-  fun n ty ->
-    let Any_signature s = view_type_signature ty in
-    constructor_mk_constant_signature n V_empty Empty.absurd s
-and constructor_mk_constant_signature : type a b. hs_name -> a svar -> (a -> a hs_kind) -> (a, b) hs_signature -> hs_name =
-  fun n v vs -> function
-    | Sig_empty t ->
-      let xs, r = view_type_arrow t in
-      let Any_kind_signature s = constructor_signature_arrow v vs xs r in
-      let (_, n', _) = mk_constant n v (fun _ -> false) vs s in
-      n'
-    | Sig_next (k, t) -> constructor_mk_constant_signature n (V_next v) (extend_kind_list (lift_kind k) vs) t
-and constructor_signature_arrow : type a. a svar -> (a -> a hs_kind) -> a hs_type list -> a hs_type -> a any_hs_kind_signature =
-  fun v vs -> function
-    | [] -> fun t ->
-      Any_kind_signature (KSig_empty (defunctionalise v vs t))
-    | x :: xs -> fun t ->
-      let k = defunctionalise v vs x in
-      (match constructor_signature_arrow (V_next v) (extend_kind_list KUnknown vs) (List.map lift_type xs) (lift_type t) with
-       | Any_kind_signature s -> Any_kind_signature (KSig_next (k, s))
-      )
+(* and constructor_mk_econstant : Empty.t hs_kind -> hs_name -> bool list -> hs_constant = *)
+(*   fun k n l -> { const_name = mk_id () *)
+(*                ; const_type = k *)
+(*                ; const_expr = constructor_mk_econstant_expr (EConst n) l *)
+(*                } *)
+(* and constructor_mk_econstant_expr : type a b. (a, b) hs_expr -> bool list -> (a, b) hs_expr *)
+(*   = fun e -> function *)
+(*     | [] -> e *)
+(*     | x :: xs -> EAbs (None, constructor_mk_econstant_expr (EApp (map_expr some id e, EVar None)) xs) *)
+
+(* and constructor_mk_constant : type a. hs_name -> Empty.t hs_type -> hs_name = *)
+(*   fun n ty -> *)
+(*     let Any_signature s = view_type_signature ty in *)
+(*     constructor_mk_constant_signature n V_empty Empty.absurd s *)
+(* and constructor_mk_constant_signature : type a b. hs_name -> a svar -> (a -> a hs_kind) -> (a, b) hs_signature -> hs_name = *)
+(*   fun n v vs -> function *)
+(*     | Sig_empty t -> *)
+(*       let xs, r = view_type_arrow t in *)
+(*       let Any_kind_signature s = constructor_signature_arrow v vs xs r in *)
+(*       let (_, n', _) = mk_constant n v (fun _ -> false) vs s in *)
+(*       n' *)
+(*     | Sig_next (k, t) -> constructor_mk_constant_signature n (V_next v) (extend_kind_list (lift_kind k) vs) t *)
+(* and constructor_signature_arrow : type a. a svar -> (a -> a hs_kind) -> a hs_type list -> a hs_type -> a any_hs_kind_signature = *)
+(*   fun v vs -> function *)
+(*     | [] -> fun t -> *)
+(*       Any_kind_signature (KSig_empty (defunctionalise v vs t)) *)
+(*     | x :: xs -> fun t -> *)
+(*       let k = defunctionalise v vs x in *)
+(*       (match constructor_signature_arrow (V_next v) (extend_kind_list KUnknown vs) (List.map lift_type xs) (lift_type t) with *)
+(*        | Any_kind_signature s -> Any_kind_signature (KSig_next (k, s)) *)
+(*       ) *)
 
 
-and singleton_constructor : type a. a svar -> (a -> a hs_kind) -> a hs_type -> a hs_type -> a hs_type =
-  fun v vs con ty ->
-    let Any_signature s = view_type_signature ty in
-    singleton_constructor_signature v vs con s
-and singleton_constructor_signature : type a b. a svar -> (a -> a hs_kind) -> a hs_type -> (a, b) hs_signature -> a hs_type =
-  fun v vs con -> function
-    | Sig_empty t ->
-      let xs, r = view_type_arrow t in
-      singleton_constructor_arrow v vs con xs r
-    | Sig_next (k, t) -> TyForall (k, singleton_constructor_signature (V_next v) (extend_kind_list (lift_kind k) vs) (lift_type con) t)
-and singleton_constructor_arrow : type a. a svar -> (a -> a hs_kind) -> a hs_type -> a hs_type list -> a hs_type -> a hs_type =
-  fun v vs con -> function
-    | [] -> fun t ->
-      (match view_type_application t with
-       | TyConst (Hs_dataname h), _ -> TyApp (TyConst (Hs_sdataname h), con)
-       | _ -> failwith ""
-      )
-    | x :: xs -> fun t ->
-      (match defunctionalise v vs x with
-       | KSing (k, k') ->
-         TyForall (KSing (k, k'), TyArrow ( TySing (lift_kind k, Some k')
-                                          , singleton_constructor_arrow (V_next v) (extend_kind_list KUnknown vs) (TyApp (lift_type con, TyVar None))
-                                              (List.map lift_type xs) (lift_type t)))
-       | k ->
-         TyForall (k, TyArrow ( TySing (lift_kind k, None)
-                              , singleton_constructor_arrow (V_next v) (extend_kind_list KUnknown vs) (TyApp (lift_type con, TyVar None))
-                                  (List.map lift_type xs) (lift_type t)))
-     )
+(* and singleton_constructor : type a. a svar -> (a -> a hs_kind) -> a hs_type -> a hs_type -> a hs_type = *)
+(*   fun v vs con ty -> *)
+(*     let Any_signature s = view_type_signature ty in *)
+(*     singleton_constructor_signature v vs con s *)
+(* and singleton_constructor_signature : type a b. a svar -> (a -> a hs_kind) -> a hs_type -> (a, b) hs_signature -> a hs_type = *)
+(*   fun v vs con -> function *)
+(*     | Sig_empty t -> *)
+(*       let xs, r = view_type_arrow t in *)
+(*       singleton_constructor_arrow v vs con xs r *)
+(*     | Sig_next (k, t) -> TyForall (k, singleton_constructor_signature (V_next v) (extend_kind_list (lift_kind k) vs) (lift_type con) t) *)
+(* and singleton_constructor_arrow : type a. a svar -> (a -> a hs_kind) -> a hs_type -> a hs_type list -> a hs_type -> a hs_type = *)
+(*   fun v vs con -> function *)
+(*     | [] -> fun t -> *)
+(*       (match view_type_application t with *)
+(*        | TyConst (Hs_dataname h), _ -> TyApp (TyConst (Hs_sdataname h), con) *)
+(*        | _ -> failwith "singleton_constructor_arrow: impossible" *)
+(*       ) *)
+(*     | x :: xs -> fun t -> *)
+(*       (match defunctionalise v vs x with *)
+(*        | KSing (k, k') -> *)
+(*          TyForall (KSing (k, k'), TyArrow ( TySing (lift_kind k, Some k') *)
+(*                                           , singleton_constructor_arrow (V_next v) (extend_kind_list KUnknown vs) (TyApp (lift_type con, TyVar None)) *)
+(*                                               (List.map lift_type xs) (lift_type t))) *)
+(*        | k -> *)
+(*          TyForall (k, TyArrow ( TySing (lift_kind k, None) *)
+(*                               , singleton_constructor_arrow (V_next v) (extend_kind_list KUnknown vs) (TyApp (lift_type con, TyVar None)) *)
+(*                                   (List.map lift_type xs) (lift_type t))) *)
+(*      ) *)
 
 and mk_con_pattern : hs_name -> int -> any_hs_con_pattern =
   fun nm -> function
@@ -797,88 +731,88 @@ and mk_pattern_names : type a. a hs_pattern -> (a -> std_ppcmds) = function
 and mk_con_pattern_names : type a. a hs_con_pattern -> (a -> std_ppcmds) = function
   | PC_empty n     -> Empty.absurd
   | PC_next (c, p) -> Either.either (mk_con_pattern_names c) (mk_pattern_names p)
-and tosing_type_family : hs_ind -> hs_type_family = fun ind ->
-  { tf_name      = "ToSing"
-  ; tf_signature = None
-  ; tf_closed    = false
-  ; tf_equations =
-      Array.mapi (fun i t ->
-          let Any_var ar = svar_of_int (type_arity t) in
-          let nms = fold_left_svar (fun x -> KVar x) (fun xs x -> x :: xs) [] ar in
-          let nms' = List.map (fun n -> KToSing n) nms in
-          Any_equation ( ar
-                       , [ kind_application (KConst (Hs_pconstrname (ind.ind_name, i))) nms]
-                       , kind_application (KConst (Hs_psconstrname (ind.ind_name, i))) nms')
-        )
-        ind.ind_constypes
-  }
+(* and tosing_type_family : hs_ind -> hs_type_family = fun ind -> *)
+(*   { tf_name      = "ToSing" *)
+(*   ; tf_signature = None *)
+(*   ; tf_closed    = false *)
+(*   ; tf_equations = *)
+(*       Array.mapi (fun i t -> *)
+(*           let Any_var ar = svar_of_int (type_arity t) in *)
+(*           let nms = fold_left_svar (fun x -> KVar x) (fun xs x -> x :: xs) [] ar in *)
+(*           let nms' = List.map (fun n -> KToSing n) nms in *)
+(*           Any_equation ( ar *)
+(*                        , [ kind_application (KConst (Hs_pconstrname (ind.ind_name, i))) nms] *)
+(*                        , kind_application (KConst (Hs_psconstrname (ind.ind_name, i))) nms') *)
+(*         ) *)
+(*         ind.ind_constypes *)
+(*   } *)
 
-and fromsing_type_family : hs_ind -> hs_type_family = fun ind ->
-  { tf_name      = "FromSing"
-  ; tf_signature = None
-  ; tf_closed    = false
-  ; tf_equations =
-      Array.mapi (fun i t ->
-          let Any_var ar = svar_of_int (type_arity t) in
-          let nms = fold_left_svar (fun x -> KVar x) (fun xs x -> x :: xs) [] ar in
-          let nms' = List.map (fun n -> KFromSing n) nms in
-          Any_equation ( ar
-                       , [ kind_application (KConst (Hs_psconstrname (ind.ind_name, i))) nms]
-                       , kind_application (KConst (Hs_pconstrname (ind.ind_name, i))) nms')
-        )
-        ind.ind_constypes
-  }
+(* and fromsing_type_family : hs_ind -> hs_type_family = fun ind -> *)
+(*   { tf_name      = "FromSing" *)
+(*   ; tf_signature = None *)
+(*   ; tf_closed    = false *)
+(*   ; tf_equations = *)
+(*       Array.mapi (fun i t -> *)
+(*           let Any_var ar = svar_of_int (type_arity t) in *)
+(*           let nms = fold_left_svar (fun x -> KVar x) (fun xs x -> x :: xs) [] ar in *)
+(*           let nms' = List.map (fun n -> KFromSing n) nms in *)
+(*           Any_equation ( ar *)
+(*                        , [ kind_application (KConst (Hs_psconstrname (ind.ind_name, i))) nms] *)
+(*                        , kind_application (KConst (Hs_pconstrname (ind.ind_name, i))) nms') *)
+(*         ) *)
+(*         ind.ind_constypes *)
+(*   } *)
 
-and fromsing_expr : hs_ind -> (Empty.t, Empty.t) hs_expr = fun ind ->
-  EAbs ( None
-       , ECase (EVar None
-               , Array.mapi
-                   (fun i t ->
-                      let ar = type_arity t in
-                      let Any_con_pattern (p, nms) = mk_con_pattern (Hs_sconstrname (ind.ind_name, i)) ar in
-                      Any_match (PCon p
-                                , expr_application
-                                    (EConst (Hs_constrname (ind.ind_name, i)))
-                                    (List.map
-                                       (fun n ->
-                                          EApp (EConst (Hs_ename "fromSing")
-                                               , EVar (Either.Right n)))
-                                       (List.rev nms))))
-                   ind.ind_constypes
-               ))
+(* and fromsing_expr : hs_ind -> (Empty.t, Empty.t) hs_expr = fun ind -> *)
+(*   EAbs ( None *)
+(*        , ECase (EVar None *)
+(*                , Array.mapi *)
+(*                    (fun i t -> *)
+(*                       let ar = type_arity t in *)
+(*                       let Any_con_pattern (p, nms) = mk_con_pattern (Hs_sconstrname (ind.ind_name, i)) ar in *)
+(*                       Any_match (PCon p *)
+(*                                 , expr_application *)
+(*                                     (EConst (Hs_constrname (ind.ind_name, i))) *)
+(*                                     (List.map *)
+(*                                        (fun n -> *)
+(*                                           EApp (EConst (Hs_ename "fromSing") *)
+(*                                                , EVar (Either.Right n))) *)
+(*                                        (List.rev nms)))) *)
+(*                    ind.ind_constypes *)
+(*                )) *)
 
-and pr_hs_type : type a. a hs_type -> std_ppcmds = fun ty -> pr_hs_type_par false ty
-and pr_hs_type_par : type a. bool -> a hs_type -> std_ppcmds =
-  fun par ty -> pr_hs_type' par (fun _ -> str "UNBOUND_VAR") ty
-and pr_hs_type' : type a. bool -> (a -> std_ppcmds) -> a hs_type -> std_ppcmds =
-  fun par f ty -> match view_type_signature ty with
-    | Any_signature (Sig_empty ty') ->
-      pr_hs_type_simple par f ty'
-    | Any_signature s ->
-      pp_par par
-        (str "forall" ++ pr_hs_type_forall f s)
-and pr_hs_type_simple : type a. bool -> (a -> std_ppcmds) -> a hs_type -> std_ppcmds =
-  fun par f -> function
-    | TyStar -> str "*"
-    | TyVar x -> f x
-    | TyApp (a, b) -> pp_par par
-                        (pr_hs_type' false f a ++ spc () ++
-                         pr_hs_type' true f b)
-    | TyArrow (a, b) -> pp_par par
-                          (pr_hs_type' true f a ++
-                           spc () ++ str "->" ++ spc () ++
-                           pr_hs_type' false f b)
-    | TyForall (k, a) -> failwith "impossible"
-    | TyConst s -> pr_hs_name_par par s
-    | TyKind k -> str "{- KIND -} " ++ pr_hs_kind' par f k
-    | TySing (k, a) -> pp_par par
-                         (str "Sing" ++ spc () ++
-                          pr_hs_kind' true f k ++ spc () ++
-                          f a )
-    | TyToSing k -> pp_par par
-                     (str "ToSing" ++ spc () ++
-                      pr_hs_type' true f k)
-    | TyUnknown -> str "UNKNOWN"
+(* and pr_hs_type : type a. a hs_type -> std_ppcmds = fun ty -> pr_hs_type_par false ty *)
+(* and pr_hs_type_par : type a. bool -> a hs_type -> std_ppcmds = *)
+(*   fun par ty -> pr_hs_type' par (fun _ -> str "UNBOUND_VAR") ty *)
+(* and pr_hs_type' : type a. bool -> (a -> std_ppcmds) -> a hs_type -> std_ppcmds = *)
+(*   fun par f ty -> match view_type_signature ty with *)
+(*     | Any_signature (Sig_empty ty') -> *)
+(*       pr_hs_type_simple par f ty' *)
+(*     | Any_signature s -> *)
+(*       pp_par par *)
+(*         (str "forall" ++ pr_hs_type_forall f s) *)
+(* and pr_hs_type_simple : type a. bool -> (a -> std_ppcmds) -> a hs_type -> std_ppcmds = *)
+(*   fun par f -> function *)
+(*     | TyStar -> str "*" *)
+(*     | TyVar x -> f x *)
+(*     | TyApp (a, b) -> pp_par par *)
+(*                         (pr_hs_type' false f a ++ spc () ++ *)
+(*                          pr_hs_type' true f b) *)
+(*     | TyArrow (a, b) -> pp_par par *)
+(*                           (pr_hs_type' true f a ++ *)
+(*                            spc () ++ str "->" ++ spc () ++ *)
+(*                            pr_hs_type' false f b) *)
+(*     | TyForall (k, a) -> failwith "impossible" *)
+(*     | TyConst s -> pr_hs_name_par par s *)
+(*     | TyKind k -> str "{- KIND -} " ++ pr_hs_kind' par f k *)
+(*     | TySing (k, a) -> pp_par par *)
+(*                          (str "Sing" ++ spc () ++ *)
+(*                           pr_hs_kind' true f k ++ spc () ++ *)
+(*                           f a ) *)
+(*     | TyToSing k -> pp_par par *)
+(*                      (str "ToSing" ++ spc () ++ *)
+(*                       pr_hs_type' true f k) *)
+(*     | TyUnknown -> str "UNKNOWN" *)
 and pr_hs_kind : type a. a hs_kind -> std_ppcmds = fun ty -> pr_hs_kind_par false ty
 and pr_hs_kind_par : type a. bool -> a hs_kind -> std_ppcmds =
   fun par ty -> pr_hs_kind' par (fun _ -> str "UNBOUND_VAR") ty
@@ -923,13 +857,25 @@ and pr_hs_kind'' : type a. bool -> (a -> std_ppcmds) -> a hs_kind -> std_ppcmds 
                      (str "ToSing" ++ spc () ++
                       pr_hs_kind' true f k)
     | KUnknown -> str "KUNKNOWN"
-and pr_hs_type_forall : type a b. (a -> std_ppcmds) -> (a, b) hs_signature -> std_ppcmds =
+(* and pr_hs_type_forall : type a b. (a -> std_ppcmds) -> (a, b) hs_signature -> std_ppcmds = *)
+(*   fun f -> function *)
+(*     | Sig_empty ty -> str "." ++ spc () ++ pr_hs_type' false f ty *)
+(*     | Sig_next (k, s) -> *)
+(*       let n = str (mk_id ()) in *)
+(*       spc () ++ str "(" ++ n ++ spc () ++ str "::" ++ spc () ++ *)
+(*       pr_hs_kind' false f k ++ str ")" ++ pr_hs_type_forall (Option.cata f n) s *)
+and pr_hs_constructor_signature : type a b. (a, b) hs_kind_signature -> (b -> std_ppcmds) * std_ppcmds * std_ppcmds =
+  fun s -> pr_hs_constructor_signature' (fun _ -> str "UNBOUND_VAR") s
+and pr_hs_constructor_signature' : type a b. (a -> std_ppcmds) -> (a, b) hs_kind_signature -> (b -> std_ppcmds) * std_ppcmds * std_ppcmds =
   fun f -> function
-    | Sig_empty ty -> str "." ++ spc () ++ pr_hs_type' false f ty
-    | Sig_next (k, s) ->
+    | KSig_empty ty -> f, mt (), pr_hs_kind' false f ty
+    | KSig_next (k, s) ->
       let n = str (mk_id ()) in
-      spc () ++ str "(" ++ n ++ spc () ++ str "::" ++ spc () ++
-      pr_hs_kind' false f k ++ str ")" ++ pr_hs_type_forall (Option.cata f n) s
+      let g, a, b = pr_hs_constructor_signature' (Option.cata f n) s in
+      g
+    , spc () ++ str "(" ++ n ++ spc () ++ str "::" ++ spc () ++
+      pr_hs_kind' false f k ++ str ")" ++ a
+    , b
 and pr_hs_kind_signature : type a b. (a, b) hs_kind_signature -> std_ppcmds =
   fun s -> pr_hs_kind_signature' (fun _ -> str "UNBOUND_VAR") s
 and pr_hs_kind_signature' : type a b. (a -> std_ppcmds) -> (a, b) hs_kind_signature -> std_ppcmds =
@@ -998,7 +944,7 @@ and pr_hs_expr' : type a b. bool -> (a -> std_ppcmds) -> (b -> std_ppcmds) -> (a
         ( str "SLambda" ++ spc () ++
           pp_par true
             ((match t with
-                | Some t -> str "\\(" ++ str n ++ spc () ++ str "::" ++ spc () ++ pr_hs_type' false g t ++ str ")"
+                | Some t -> str "\\(" ++ str n ++ spc () ++ str "::" ++ spc () ++ pr_hs_kind' false g t ++ str ")"
                 | None -> str "\\" ++ str n
               ) ++ spc () ++ str "->" ++ spc () ++ pr_hs_expr' false (Option.cata f (str n)) g a))
     | EForall (None, a) ->
@@ -1038,6 +984,12 @@ and pr_hs_con_pattern' : type a. bool -> (a -> std_ppcmds) -> a hs_con_pattern -
     | PC_next (c, p) -> pp_par par
                           (pr_hs_con_pattern' false (fun x -> f (Either.left x)) c ++ spc () ++
                            pr_hs_pattern' true (fun x -> f (Either.right x)) p)
+and pr_hs_constructor : Empty.t hs_constructor -> std_ppcmds =
+  fun (Hs_constructor (s, ts)) ->
+    let f, s, l = pr_hs_constructor_signature s in
+    str "forall" ++ spc () ++ s ++ str "." ++ spc () ++
+    prlist (fun t -> pr_hs_kind' false f t ++ spc () ++ str "->" ++ spc ()) ts ++
+    l
 and pr_hs_ind : hs_ind -> std_ppcmds = fun ind ->
   h 0 (str "data" ++ spc () ++ pr_hs_name (Hs_dataname ind.ind_name) ++
        pr_any_hs_kind_signature ind.ind_signature ++ spc () ++ str "where" ++ fnl ()) ++
@@ -1045,7 +997,7 @@ and pr_hs_ind : hs_ind -> std_ppcmds = fun ind ->
          prvecti_with_sep fnl (fun i c ->
              pr_hs_name (Hs_constrname (ind.ind_name, i)) ++
              spc () ++ str "::" ++ spc () ++
-             hov 2 (ws 2 ++ pr_hs_type c)
+             hov 2 (ws 2 ++ pr_hs_constructor c)
            ) ind.ind_constypes
         ) ++ fnl ()
   (* FIXME : do not always apply FromSing or ToSing, to prevent several layers of Sing *)
@@ -1066,26 +1018,26 @@ and pr_hs_sing : hs_ind -> std_ppcmds = fun ind ->
          prvecti_with_sep fnl (fun i c ->
              pr_hs_name (Hs_sconstrname (ind.ind_name, i)) ++
              spc () ++ str "::" ++ spc () ++
-             hov 2 (ws 2 ++ pr_hs_type c)
-           ) ind.ind_sconstypes
+             hov 2 (ws 2 ++ pr_hs_constructor (singletonise (ind.ind_name,i) c))
+           ) ind.ind_constypes
         ) ++ fnl ()
-and pr_hs_singinstance : hs_ind -> std_ppcmds = fun ind ->
-  let Any_kind_signature s = ind.ind_signature in
-  h 0 (str "instance SingKind" ++ spc () ++
-       (match s with
-        | KSig_empty _ -> pr_hs_name (Hs_dataname ind.ind_name)
-        | _ -> pp_par true (fold_left_kind_signature (fun _ -> str (mk_id ()))
-                              (fun a b -> a ++ spc () ++ b) (pr_hs_name (Hs_dataname ind.ind_name)) s)) ++ spc () ++
-       str "where"
-      ) ++ fnl () ++
-  hov 2 (str "  " ++
-         str "fromSing = " ++ pr_hs_expr (fromsing_expr ind)
-        ) ++ fnl ()
+(* and pr_hs_singinstance : hs_ind -> std_ppcmds = fun ind -> *)
+(*   let Any_kind_signature s = ind.ind_signature in *)
+(*   h 0 (str "instance SingKind" ++ spc () ++ *)
+(*        (match s with *)
+(*         | KSig_empty _ -> pr_hs_name (Hs_dataname ind.ind_name) *)
+(*         | _ -> pp_par true (fold_left_kind_signature (fun _ -> str (mk_id ())) *)
+(*                               (fun a b -> a ++ spc () ++ b) (pr_hs_name (Hs_dataname ind.ind_name)) s)) ++ spc () ++ *)
+(*        str "where" *)
+(*       ) ++ fnl () ++ *)
+(*   hov 2 (str "  " ++ *)
+(*          str "fromSing = " ++ pr_hs_expr (fromsing_expr ind) *)
+(*         ) ++ fnl () *)
 and pr_hs_constant : hs_constant -> std_ppcmds = fun cs ->
   hov 2 (pr_hs_name (Hs_ename cs.const_name) ++
          spc () ++ str "::" ++ spc () ++
          str "Sing'" ++ spc () ++
-         pr_hs_type' true Empty.absurd cs.const_type
+         pr_hs_kind' true Empty.absurd cs.const_type
         ) ++ fnl () ++
   hov 2 (pr_hs_name (Hs_ename cs.const_name) ++
          spc () ++ str "=" ++ spc () ++
@@ -1150,12 +1102,12 @@ and typefamily_succ : hs_type_family -> Elemset.t = fun tf ->
        (Array.map equation_succ tf.tf_equations))
 and const_succ c =
   Elemset.union
-    (type_succ c.const_type)
+    (kind_succ c.const_type)
     (expr_succ c.const_expr)
 and expr_succ : type a b. (a, b) hs_expr -> Elemset.t = function
   | EStar | EUnknown | EVar _ -> Elemset.empty
   | EApp (a, b) | EFunapp (a, b) -> Elemset.union (expr_succ a) (expr_succ b)
-  | EAbs (t, a) -> Elemset.union (Option.cata type_succ Elemset.empty t) (expr_succ a)
+  | EAbs (t, a) -> Elemset.union (Option.cata kind_succ Elemset.empty t) (expr_succ a)
   | EForall (k, a) -> Elemset.union (Option.cata kind_succ Elemset.empty k) (expr_succ a)
   | ECase (a, m) -> Elemset.union (expr_succ a)
                       (Array.fold_left Elemset.union Elemset.empty (Array.map match_succ m))
@@ -1179,13 +1131,13 @@ and name_succ = function
   | Hs_constrname n | Hs_pconstrname n -> Elemset.singleton (Hs_ind (fst n))
   | Hs_sconstrname n | Hs_psconstrname n | Hs_ssconstrname n -> Elemset.singleton (Hs_sind (fst n))
   | Hs_ename _ -> failwith ""
-and type_succ : type a. a hs_type -> Elemset.t = function
-  | TyStar | TyVar _ | TyUnknown ->  Elemset.empty
-  | TyApp (a, b) | TyArrow (a, b) ->  Elemset.union (type_succ a) (type_succ b)
-  | TyForall (a, b) ->  Elemset.union (kind_succ a) (type_succ b)
-  | TyConst n ->  name_succ n
-  | TyToSing t -> type_succ t
-  | TyKind k | TySing (k, _) ->  kind_succ k
+(* and type_succ : type a. a hs_type -> Elemset.t = function *)
+(*   | TyStar | TyVar _ | TyUnknown ->  Elemset.empty *)
+(*   | TyApp (a, b) | TyArrow (a, b) ->  Elemset.union (type_succ a) (type_succ b) *)
+(*   | TyForall (a, b) ->  Elemset.union (kind_succ a) (type_succ b) *)
+(*   | TyConst n ->  name_succ n *)
+(*   | TyToSing t -> type_succ t *)
+(*   | TyKind k | TySing (k, _) ->  kind_succ k *)
 and kind_succ : type a. a hs_kind -> Elemset.t = fun k -> kind_succ' (reduce_kind k)
 and kind_succ' : type a. a hs_kind -> Elemset.t = function
   | KStar | KUnknown | KVar _ -> Elemset.empty
@@ -1213,9 +1165,10 @@ and kind_signature_succ : type a b. (a, b) hs_kind_signature -> Elemset.t = func
 and ind_succ : inductive -> hs_ind -> Elemset.t = fun i ind ->
   let Any_kind_signature s = ind.ind_signature in
   Elemset.union (kind_signature_succ s)
-    (Array.fold_left Elemset.union Elemset.empty (Array.map type_succ ind.ind_constypes))
+    (Elemset.empty)
+    (* (Array.fold_left Elemset.union Elemset.empty (Array.map type_succ ind.ind_constypes)) *)
 and sind_succ : inductive -> hs_ind -> Elemset.t = fun i ind ->
   let Any_kind_signature s = ind.ind_signature in
-  Elemset.add (Hs_ind i)
-    (Array.fold_left Elemset.union Elemset.empty (Array.map type_succ ind.ind_sconstypes))
+  Elemset.add (Hs_ind i) Elemset.empty
+    (* (Array.fold_left Elemset.union Elemset.empty (Array.map type_succ ind.ind_sconstypes)) *)
 

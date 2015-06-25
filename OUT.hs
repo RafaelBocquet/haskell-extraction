@@ -45,79 +45,17 @@ instance SingKind (Sing k x) where
 
 $(P.return [])
 data Nat :: * where
-  O ::   Nat
-  S ::   Nat -> Nat
+  O ::   forall . Nat
+  S ::   forall . Nat -> Nat
 $(P.return [])
-data C (c :: TyFun' Nat *)
+data B (a :: TyFun' Nat *)
 $(P.return [])
-type instance (@@) C d = Nat
+type instance (@@) B b = Nat b
 $(P.return [])
-data K (e :: TyPi' Nat C)
+data A (c :: TyPi' Nat B)
 $(P.return [])
-type family D  :: TyPi Nat C where
-   D  = K
+type instance (@@@) A d = 'S d
 $(P.return [])
-aaa :: Sing' {- KIND -} D
-aaa = P.undefined
-
-$(P.return [])
-data P (f :: TyPi' Nat C)
-$(P.return [])
-type family E  :: TyPi Nat C where
-   E  = P
-$(P.return [])
-data G (h :: Nat) (g :: TyFun' Nat *)
-$(P.return [])
-type instance (@@) (G j) i = *
-$(P.return [])
-data L (l :: Nat) (k :: TyPi' Nat (G l))
-$(P.return [])
-data I (n :: Nat) (m :: TyFun' Nat *)
-$(P.return [])
-type instance (@@) (I p) o = Nat
-$(P.return [])
-data M (r :: Nat) (q :: TyPi' Nat (I r))
-$(P.return [])
-type instance (@@@) (L t) s = Nat
-$(P.return [])
-type instance (@@@) (M v) u = 'S (E @@@ u)
-$(P.return [])
-type family N (aa :: Nat) (z :: Nat)  :: Nat where
-   N w 'O = 'O
-   N y ('S x) = M y @@@ x
-$(P.return [])
-type instance (@@@) P ab = N ab ab
-$(P.return [])
-data F (ad :: Nat) (ac :: TyPi' Nat (G ad))
-$(P.return [])
-data H (af :: Nat) (ae :: TyPi' Nat (I af))
-$(P.return [])
-type instance (@@@) (F ah) ag = Nat
-$(P.return [])
-type instance (@@@) (H aj) ai = 'S (D @@@ ai)
-$(P.return [])
-type family J (ao :: Nat) (an :: Nat)  :: Nat where
-   J ak 'O = 'O
-   J am ('S al) = H am @@@ al
-$(P.return [])
-type instance (@@@) K ap = J ap ap
-$(P.return [])
-data instance Sing Nat ar where
-  SO ::   Sing' 'O
-  SS ::   forall (aq :: Nat). (Sing Nat aq) -> Sing' ('S aq)
-$(P.return [])
-data B (as :: TyFun' Nat *)
-$(P.return [])
-type instance (@@) B at = Nat
-$(P.return [])
-data A (au :: TyPi' Nat B)
-$(P.return [])
-b :: Sing' {- KIND -} A
-b = SLambda (\av -> SS av)
-
-$(P.return [])
-a :: Sing' {- KIND -} 'O
-a = SO
-
-$(P.return [])
-type instance (@@@) A aw = 'S aw
+data instance Sing Nat f where
+  SO ::   forall . Sing' 'O
+  SS ::   forall  (e :: Nat). Sing Nat e -> Sing' ('S e)

@@ -31,6 +31,6 @@ Hextraction
   (* Coq.Setoids.Setoid *)
   (* Coq.Vectors.VectorDef *)
   (* Coq.Vectors.VectorSpec *)
-  , nat aaa
+  , nat
 .
 
