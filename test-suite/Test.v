@@ -18,6 +18,12 @@ with bbb n :=
          | S n => S (aaa n)
        end.
 
+Definition p1 n :=
+  match n with
+    | O => S O
+    | S n => S (S n)
+  end.
+
 Hextraction
   (* Coq.Init.Logic *)
   (* Coq.Init.Logic_Type *)
@@ -31,6 +37,6 @@ Hextraction
   (* Coq.Setoids.Setoid *)
   (* Coq.Vectors.VectorDef *)
   (* Coq.Vectors.VectorSpec *)
-  , nat
+  , True False nat bool id not p1
 .
 

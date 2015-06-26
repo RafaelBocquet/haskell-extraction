@@ -78,8 +78,6 @@ and hs_ind =
   ; ind_signature : Empty.t any_hs_kind_signature
   ; ind_consnames : string array
   ; ind_constypes : Empty.t hs_constructor array
-  (* ; ind_sconstypes : Empty.t hs_type array *)
-  ; ind_consarities : bool list array
   }
 and any_hs_type_family_signature =
   | Any_type_family_signature : 'a svar * ('a -> 'a hs_kind) * 'a hs_kind -> any_hs_type_family_signature
@@ -406,6 +404,12 @@ let rec view_kind_fun_application' : type a. a hs_kind -> a hs_kind list -> a hs
 and view_kind_fun_application : type a. a hs_kind -> a hs_kind * a hs_kind list =
   fun k -> view_kind_fun_application' k []
 
+let rec constructor_arity : type a. a hs_constructor -> bool list = function
+  | Hs_constructor (_, ts) -> List.map (function
+      | KSing _ -> true
+      | _       -> false
+    ) ts
+
 let rec reduce_kind : type a. a hs_kind -> a hs_kind =
   fun k ->
     let k, bs = view_kind_fun_application k in
@@ -472,7 +476,6 @@ and mk_constant : type a b. hs_name -> a svar -> (a -> bool) -> (a -> a hs_kind)
       false,
       Hs_symbolname na,
       KPi (k, kb)
-
 (* and defunctionalise : type a. a svar -> (a -> a hs_kind) -> a hs_type -> a hs_kind = *)
 (*   fun v vs -> function *)
 (*     | TyStar -> KStar *)
@@ -494,7 +497,7 @@ and defunctionalise_match : type a. hs_ind -> a svar -> (a -> a hs_kind) -> a hs
              ; tf_closed    = true
              ; tf_equations = Array.mapi
                    (fun i b ->
-                      let Any_lifted_var (v', f, l) = lift_var_by v [] (List.length ind.ind_consarities.(i)) in
+                      let Any_lifted_var (v', f, l) = lift_var_by v [] (List.length (constructor_arity ind.ind_constypes.(i))) in
                       Any_equation
                         ( v'
                         , List.map (fun v -> KVar (f v)) vl
@@ -617,7 +620,7 @@ and singletonise : type a. constructor -> a hs_constructor -> a hs_constructor =
         fun k -> function
           | [] -> Hs_constructor (KSig_empty (KApp (KConst (Hs_sdataname i), k)), [])
           | (KSing (_, v) as t) :: ts ->
-            let Hs_constructor (s, ts') = singletonise' (KApp (k, KVar v)) ts in
+            let Hs_constructor (s, ts') = singletonise' (KApp (k, KToSing (KVar v))) ts in
             Hs_constructor (s, map_kind (lift_of_kind_signature s) t :: ts')
           | t :: ts ->
             let Hs_constructor (s, ts') = singletonise' (KApp (lift_kind k, KVar None)) (List.map lift_kind ts) in
@@ -635,11 +638,11 @@ and constructor_mk_constant : type a. a svar -> (a -> a hs_kind) -> constructor 
           | [] -> Any_kind_signature (KSig_empty k)
           (* | (KSing (_, v) as t) :: ts -> constructor_mk_constant' (KApp (k, KVar v)) ts *)
           | t :: ts ->
-            let Any_kind_signature s = constructor_mk_constant' (KApp (lift_kind k, KVar None)) (List.map lift_kind ts) in
+            let Any_kind_signature s = constructor_mk_constant' (lift_kind k) (List.map lift_kind ts) in
             Any_kind_signature (KSig_next (t, s))
       in
       let Any_kind_signature s = constructor_mk_constant' k l in
-      let (_, c, _) = mk_constant (Hs_pconstrname n) v (const true) vs s in
+      let (_, c, _) = mk_constant (Hs_pconstrname n) v (const false) vs s in
       c
       (* constructor_mk_constant' (KConst (Hs_pconstrname n)) l; *)
     | Hs_constructor (KSig_next (k, s), ts) ->
@@ -954,7 +957,7 @@ and pr_hs_expr' : type a b. bool -> (a -> std_ppcmds) -> (b -> std_ppcmds) -> (a
       let fn = mk_id () and n = mk_id () in
       str "let {" ++ spc () ++ str fn ++
       spc () ++ str "::" ++ spc () ++
-      str "Sing" ++ spc () ++ pr_hs_kind' true g k ++ str ";" ++ spc () ++
+      str "Sing'" ++ spc () ++ pr_hs_kind' true g k ++ str ";" ++ spc () ++
       str fn ++
       spc () ++ str "=" ++ spc () ++
       pr_hs_expr' false f (Option.cata g (str n)) a ++
@@ -987,7 +990,7 @@ and pr_hs_con_pattern' : type a. bool -> (a -> std_ppcmds) -> a hs_con_pattern -
 and pr_hs_constructor : Empty.t hs_constructor -> std_ppcmds =
   fun (Hs_constructor (s, ts)) ->
     let f, s, l = pr_hs_constructor_signature s in
-    str "forall" ++ spc () ++ s ++ str "." ++ spc () ++
+    str "forall" ++ s ++ str "." ++ spc () ++
     prlist (fun t -> pr_hs_kind' false f t ++ spc () ++ str "->" ++ spc ()) ts ++
     l
 and pr_hs_ind : hs_ind -> std_ppcmds = fun ind ->
@@ -1165,10 +1168,12 @@ and kind_signature_succ : type a b. (a, b) hs_kind_signature -> Elemset.t = func
 and ind_succ : inductive -> hs_ind -> Elemset.t = fun i ind ->
   let Any_kind_signature s = ind.ind_signature in
   Elemset.union (kind_signature_succ s)
-    (Elemset.empty)
-    (* (Array.fold_left Elemset.union Elemset.empty (Array.map type_succ ind.ind_constypes)) *)
+    (Array.fold_left Elemset.union Elemset.empty (Array.map constructor_succ ind.ind_constypes))
 and sind_succ : inductive -> hs_ind -> Elemset.t = fun i ind ->
   let Any_kind_signature s = ind.ind_signature in
   Elemset.add (Hs_ind i) Elemset.empty
-    (* (Array.fold_left Elemset.union Elemset.empty (Array.map type_succ ind.ind_sconstypes)) *)
+and constructor_succ : type a. a hs_constructor -> Elemset.t = function
+  | Hs_constructor (s, ks) ->
+    Elemset.union (kind_signature_succ s)
+      (List.fold_left Elemset.union Elemset.empty (List.map kind_succ ks))
 
