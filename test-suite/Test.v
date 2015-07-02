@@ -37,6 +37,6 @@ Hextraction
   (* Coq.Setoids.Setoid *)
   (* Coq.Vectors.VectorDef *)
   (* Coq.Vectors.VectorSpec *)
-  , True False nat bool id not p1
+  , nat Fin.t eq True False FS_inj
 .
 

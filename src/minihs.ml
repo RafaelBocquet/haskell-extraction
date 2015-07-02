@@ -95,6 +95,7 @@ and ('a, 'b) hs_expr =
   | EAbs of 'b hs_kind option * ('a option, 'b) hs_expr
   | EForall of 'b hs_kind option * ('a, 'b option) hs_expr
   | ECase of ('a, 'b) hs_expr * ('a, 'b) hs_match array
+  | EFix : 'c svar * ('c -> (('a, 'c) Either.t, 'b) hs_expr) * (('a, 'c) Either.t, 'b) hs_expr -> ('a, 'b) hs_expr
   | EConst of hs_name
   | EUnknown
 and ('a, 'b) hs_match =
@@ -117,22 +118,38 @@ and hs_symbol =
 and 'a svar =
   | V_empty : Empty.t svar
   | V_next : 'a svar -> 'a option svar
+  | V_either : 'a svar * 'b svar -> ('a, 'b) Either.t svar
 and any_svar =
   | Any_var : 'a svar -> any_svar
 and 'a any_lifted_svar =
   | Any_lifted_var : 'b svar * ('a -> 'b) * 'b list -> 'a any_lifted_svar
 and ('a, 'b) eq =
   | Refl : ('a, 'a) eq
+and 'a any_fix_result =
+  | Any_fix_result : 'c svar * ('c * 'a hs_kind) list -> 'a any_fix_result
 
 let rec svar_dec_eq : type a b. a svar -> b svar -> (a, b) eq option = function
   | V_empty -> (function
       | V_empty -> Some Refl
       | V_next _ -> None
+      | V_either _ -> None
     )
   | V_next a -> (function
       | V_empty -> None
       | V_next b -> (match svar_dec_eq a b with
           | Some Refl -> Some Refl
+          | None -> None
+        )
+      | V_either _ -> None
+    )
+  | V_either (a, b) -> (function
+      | V_empty -> None
+      | V_next _ -> None
+      | V_either (a', b') -> (match svar_dec_eq a a' with
+          | Some Refl -> (match svar_dec_eq b b' with
+              | Some Refl -> Some Refl
+              | None -> None
+            )
           | None -> None
         )
     )
@@ -151,12 +168,19 @@ let rec svar_of_int : int -> any_svar = function
 let rec fold_left_svar : type a b c. (a -> b) -> (c -> b -> c) -> c -> a svar -> c =
   fun f g a -> function
     | V_empty -> a
-    | V_next v -> fold_left_svar (fun x -> f (Some x)) g (g a (f None)) v
+    | V_next v -> fold_left_svar (rmap f some) g (g a (f None)) v
+    | V_either (v, w) -> fold_left_svar (rmap f Either.right) g (fold_left_svar (rmap f Either.left) g a v) w
+
+let rec int_of_svar : type a. a svar -> a -> int = function
+  | V_empty -> Empty.absurd
+  | V_next v -> Option.cata (fun x -> 1 + int_of_svar v x) 0
+  | V_either _ -> failwith "TODO"
 
 let rec fold_right_svar : type a b c. (a -> b) -> (b -> c -> c) -> a svar -> c -> c =
   fun f g -> function
     | V_empty -> fun a -> a
-    | V_next v -> fun a -> g (f None) (fold_right_svar (fun x -> f (Some x)) g v a)
+    | V_next v -> fun a -> g (f None) (fold_right_svar (rmap f some) g v a)
+    | V_either (v, w) -> fun a -> fold_right_svar (rmap f Either.left) g v (fold_right_svar (rmap f Either.right) g w a)
 
 module DefunOrdered = struct
   type t = T : 'a svar * ('a -> 'a hs_kind) * 'a hs_kind * 'a option hs_kind -> t
@@ -359,6 +383,7 @@ let rec map_expr : type a b c d. (a -> b) -> (c -> d) -> (a, c) hs_expr -> (b, d
   | EFunapp (a, b) -> EFunapp (map_expr f g a, map_expr f g b)
   | EAbs (k, a) -> EAbs (Option.map (map_kind g) k, map_expr (Option.map f) g a)
   | EForall (k, a) -> EForall (Option.map (map_kind g) k, map_expr f (Option.map g) a)
+  | EFix (v, a, b) -> EFix (v, rmap (map_expr (Either.map_left f) g) a, map_expr (Either.map_left f) g b)
   | EUnknown -> EUnknown
   | EConst n -> EConst n
   | ECase (a, p) -> ECase (map_expr f g a, Array.map (map_case f g) p)
@@ -521,11 +546,14 @@ and defunctionalise_match : type a. hs_ind -> a svar -> (a -> a hs_kind) -> a hs
                  Hs_typefamily ta ::
                  !state.st_list
              }; KApp (k', a)
-and defunctionalise_fix : type a. a svar -> (a -> a hs_kind) -> a hs_kind array -> (a hs_kind list -> a hs_kind array) -> int -> a hs_kind =
-  fun v vs ks f i ->
+and defunctionalise_fix : type a b. a svar -> (a -> a hs_kind) -> a hs_kind array -> (a any_fix_result -> b * a hs_kind array) -> b * a hs_kind array =
+  fun v vs ks f ->
     let ns = Array.map (fun _ -> mk_tid ()) ks in
     let vl = var_list v in
-    let fs = f (List.map (fun n -> kind_application (KConst (Hs_tfname n)) (List.map (fun v -> KVar v) vl)) (Array.to_list ns)) in
+    let Any_var vc = svar_of_int (Array.length ks) in
+    let vcs = var_list vc in
+    let r = List.map (fun (c, n) -> c, kind_application (KConst (Hs_tfname n)) (List.map (fun v -> KVar v) vl)) (List.combine vcs (Array.to_list ns)) in
+    let b, fs = f (Any_fix_result (vc, r)) in
     let ts = Array.mapi (fun i k ->
         { tf_name = ns.(i)
         ; tf_signature = Some (Any_type_family_signature (v, vs, ks.(i)))
@@ -544,7 +572,7 @@ and defunctionalise_fix : type a. a svar -> (a -> a hs_kind) -> a hs_kind array 
              ; st_list =
                  Array.fold_left (fun acc tf -> Hs_typefamily tf.tf_name :: acc) !state.st_list ts
              };
-    kind_application (KConst (Hs_tfname ns.(i))) (List.map (fun v -> KVar v) vl)
+    b, Array.of_list (List.map snd r)
 and defunctionalise_lambda : type a. a svar -> (a -> a hs_kind) -> a hs_kind -> a option hs_kind -> a option hs_kind -> a hs_kind =
   fun v vs k t a ->
     let na = mk_tid () in
@@ -719,14 +747,17 @@ and mk_con_pattern : hs_name -> int -> any_hs_con_pattern =
 and var_list : type a. a svar -> a list = function
   | V_empty -> []
   | V_next v -> None :: List.map (fun x -> Some x) (var_list v)
+  | V_either (v, w) -> List.map Either.left (var_list v) @ List.map Either.right (var_list w)
 
 and mk_names : type a. a svar -> (a -> std_ppcmds) = function
   | V_empty -> fun _ -> failwith "impossible"
   | V_next v -> Option.cata (mk_names v) (str (mk_id ()))
+  | V_either (v, w) -> Either.either (mk_names v) (mk_names w)
 
 and mk_var_names : type a. a svar -> (a -> std_ppcmds) = function
   | V_empty -> fun _ -> failwith "impossible"
   | V_next v -> Option.cata (mk_var_names v) (int (fold_left_svar (fun _ -> 1) (+) 0 v))
+  | V_either (v, w) -> Either.either (fun x -> str "L" ++ mk_var_names v x) (fun x -> str "R" ++ mk_var_names w x)
 
 and mk_pattern_names : type a. a hs_pattern -> (a -> std_ppcmds) = function
   | PAny -> let n = mk_id () in fun () -> str n
@@ -975,6 +1006,7 @@ and pr_hs_expr' : type a b. bool -> (a -> std_ppcmds) -> (b -> std_ppcmds) -> (a
               pr_hs_expr' false (Either.either f h) g e
            )
            ps ++ spc () ++ str "}")
+    | EFix (_, _, _) -> str "FIXFIXFIX"
     | EConst n -> pr_hs_name_par par n
     | EUnknown -> str "P.undefined"
 and pr_hs_pattern' : type a. bool -> (a -> std_ppcmds) -> a hs_pattern -> std_ppcmds =
@@ -1114,6 +1146,8 @@ and expr_succ : type a b. (a, b) hs_expr -> Elemset.t = function
   | EForall (k, a) -> Elemset.union (Option.cata kind_succ Elemset.empty k) (expr_succ a)
   | ECase (a, m) -> Elemset.union (expr_succ a)
                       (Array.fold_left Elemset.union Elemset.empty (Array.map match_succ m))
+  | EFix (v, a, b) -> Elemset.union (expr_succ b)
+                        (fold_left_svar (rmap expr_succ a) Elemset.union Elemset.empty v)
   | EConst n -> name_succ n
 and match_succ : type a b. (a, b) hs_match -> Elemset.t = function
   | Any_match (p, e) -> Elemset.union (pattern_succ p) (expr_succ e)
