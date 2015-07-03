@@ -141,6 +141,13 @@ and extract_type_application : type a b. (a, b) ExtractEnv.t -> Environ.env -> c
       let se, sk = List.split (List.map (extract_type eenv env) bs) in
       expr_fun_application e se
     , kind_fun_application k.(i) sk
+    | Const (kn,u), bs ->
+      (try
+         let cst = Cmap.find kn !state.st_constants in
+         let se, sk = List.split (List.map (extract_type eenv env) bs) in
+         expr_fun_application (EConst (Hs_econst cst.const_name)) se
+       , kind_fun_application (map_kind Empty.absurd cst.const_type) sk
+       with Not_found -> failwith "Unknown constant")
     | h, _ -> msg_error (str "Unknown type" ++ Printer.pr_constr c); EUnknown, KUnknown
 
 let rec extract_type_constructor : type a. inductive -> Environ.env -> constr -> Empty.t hs_constructor =
@@ -203,8 +210,8 @@ and extract_one_inductive_constructors env kn mib i mip =
   Array.iter (fun x -> msg_info (str "Constructor signature : " ++ Printer.pr_constr x)) types;
   let consnames = Array.map (fun s -> find_constrname (String.capitalize (Names.Id.to_string s))) mip.mind_consnames in
   let constypes = Array.map (extract_type_constructor (kn,i) env) types in
-  let conscts = Array.mapi (fun j c -> let n = ((kn,i),j) in
-                             Hs_pconstrname n, constructor_mk_constant V_empty Empty.absurd n c) constypes in
+  (* let conscts = Array.mapi (fun j c -> let n = ((kn,i),j) in *)
+  (*                            Hs_pconstrname n, constructor_mk_constant V_empty Empty.absurd n c) constypes in *)
   state := { !state with
              st_inductives =
                Indmap.modify
@@ -223,7 +230,8 @@ let rec extract_constant env kn =
              st_constants =
                Cmap.add
                  kn
-                 { const_name = find_functionname (String.uncapitalize ((Names.Label.to_string (Constant.label kn))))
+                 { const_name = kn
+                 ; const_printname = find_functionname (String.uncapitalize ((Names.Label.to_string (Constant.label kn))))
                  ; const_type = k
                  ; const_expr = e
                  }

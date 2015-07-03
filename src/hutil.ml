@@ -72,7 +72,7 @@ let rec abstraction_view env c =
   | _ -> [], (env, c)
 
 let rec application_view env c =
-  match kind_of_term (whd_betadeltaiota env Evd.empty c) with
+  match kind_of_term (whd_betaiota Evd.empty c) with
   | App (a, bs) ->
     let h, xs = application_view env a in
     h, xs @ Array.to_list bs

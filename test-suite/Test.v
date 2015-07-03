@@ -24,6 +24,11 @@ Definition p1 n :=
     | S n => S (S n)
   end.
 
+Definition p2 n b := match b with
+                       | false => n
+                       | true => S n
+                     end.
+
 Hextraction
   (* Coq.Init.Logic *)
   (* Coq.Init.Logic_Type *)
@@ -37,6 +42,6 @@ Hextraction
   (* Coq.Setoids.Setoid *)
   (* Coq.Vectors.VectorDef *)
   (* Coq.Vectors.VectorSpec *)
-  , nat Fin.t eq True False FS_inj
+  , nat plus mult
 .
 
