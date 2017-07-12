@@ -1,0 +1,17 @@
+OCAMLDEP = "ocamlfind ocamldep"
+CAMLC = "ocamlfind ocamlc -c -rectypes -thread -linkpkg"
+CAMLOPTC = "ocamlfind opt -c -rectypes -thread -linkpkg"
+CAMLLINK = "ocamlfind ocamlc -rectypes -thread -linkpkg"
+CAMLOPTLINK = "ocamlfind opt -rectypes -thread -linkpkg"
+OCAMLLIBS = "-I ocaml -I test-suite -I theories"
+
+-I ocaml -I test-suite -I theories
+-Q theories HaskellExtraction
+
+ocaml/hutil.ml
+ocaml/hextraction.ml
+ocaml/haskell_extraction.ml4
+ocaml/haskell_extraction_plugin.mllib
+
+theories/HaskellExtraction.v
+test-suite/Test.v

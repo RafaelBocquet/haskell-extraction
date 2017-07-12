@@ -1,0 +1,41 @@
+name:                haskell-of-coq
+version:             0
+license:             MIT
+author:              Rafaël Bocquet
+maintainer:          rafaelbocquet+github@gmail.com
+category:            Language
+build-type:          Simple
+cabal-version:       >=1.10
+
+executable haskell-of-coq
+  main-is:             Main.hs
+  other-modules:       Coq
+                       Coq.Parse
+                       Data.Nat
+                       Data.Sexp
+                       Emit
+                       Extraction
+                       HS
+                       Rename
+                       Telescope
+  default-extensions:  TemplateHaskell
+                       TupleSections LambdaCase
+                       DeriveFunctor  DeriveFoldable  DeriveTraversable  GeneralizedNewtypeDeriving
+                       DataKinds  PolyKinds  KindSignatures  RankNTypes
+                       GADTs  TypeFamilies  StandaloneDeriving  TypeOperators
+                       FlexibleInstances  FlexibleContexts  MultiParamTypeClasses
+  build-depends:       base
+                     , transformers
+                     , lens
+                     , attoparsec
+                     , vector
+                     , dlist
+                     , mtl
+                     , containers
+                     , bytestring
+                     , bifunctors
+                     , pretty
+                     , haskell-src-exts
+                     , dependent-sum
+  hs-source-dirs:      src
+  default-language:    Haskell2010
