@@ -19,6 +19,7 @@ main = do
   case parseCoq b >>= extract of
     Left e -> print e
     Right a -> do
+      forM (fst (rename a)) print
       let r = prettyPrintStyleMode
               (Style PageMode 160 1.5)
               (PPHsMode 2 2 2 2 2 2 2 False PPOffsideRule False)

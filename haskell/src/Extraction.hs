@@ -123,26 +123,28 @@ extractTerm c (C.EFix a b) = do
       pure ( fromJust (aTys ^? ix b)
            , foldr (\v t -> H.TCApp t (H.TVar v)) (H.TConst nFix) (H.snList s)
            )
-extractTerm c (C.ECase a b d e) = do
-  (bTy, b') <- extractTerm c b
-  (dTy, d') <- extractTerm c d
+extractTerm c (C.ECase cons scrut retType appRetType branchs) = do
   let sn = H.snOfEnv c
-  ars <- view _1 <&> M.lookup a
+  ars <- ExtractM (lift $ lift $ view _1 <&> M.lookup cons)
          <&> fromJust
          <&> fst
-  let ars = [0, 1]
-  e' <- zipWith3 (\ar i e -> do
-                     case esnOfInt ar of
-                       ESN m ->
-                         let snm = plus m sn in
-                         H.Case (H.AName (H.NICons (fst a) (snd a) i)) m
-                                (foldl H.TApp (H.mapType id (liftFinBy m) e) (H.TVar <$> takeVec sn m (allFins snm)))
-                 ) ars [0..] <$> mapM (fmap snd . extractTerm c) e
-  case H.dEnv c (H.appC H.Pair (H.appC H.Pair (H.cType sn bTy) (H.cType sn d')) (H.cList sn (fmap (H.cCase sn) e'))) of
+  let ars = [0,1] -- ...
+  branchs' <- zipWith3
+               (\ar i e -> do
+                   case esnOfInt ar of
+                     ESN m ->
+                       let snm = plus m sn in
+                         H.Case (H.AName (H.NICons (fst cons) (snd cons) i)) m
+                         (foldl H.TApp (H.mapType id (liftFinBy m) e) (H.TVar <$> takeVec sn m (allFins snm)))
+               ) ars [0..] <$> mapM (fmap snd . extractTerm c) branchs
+  (scrutTy, scrut') <- extractTerm c scrut
+  (retTypeTy, retType') <- extractTerm c retType
+  (appRetTypeTy, appRetType') <- extractTerm c appRetType
+  case H.dEnv c (H.appC H.Pair (H.appC H.Pair (H.cType sn scrutTy) (H.cType sn retType')) (H.cList sn (fmap (H.cCase sn) branchs'))) of
        (H.D s1 (H.Pair c1 (H.Pair (H.Pair bTy1 d1) (H.Compose e1)))) -> do
          let nCase = H.AName (H.NCase c1 bTy1 (H.mapType id FS d1 `H.TApp` H.TVar FZ) e1)
-         pure ( d'
-              , H.TCApp (foldr (\v t -> H.TCApp t (H.TVar v)) (H.TConst nCase) (H.snList s1)) b'
+         pure ( appRetType'
+              , H.TCApp (foldr (\v t -> H.TCApp t (H.TVar v)) (H.TConst nCase) (H.snList s1)) scrut'
               )
 
 extractSignature :: (Show n, Ord n) => H.Env (H.AName n) a -> Signature (C.Expr n) a -> ExtractM n (Signature (H.Type (H.AName n)) a)
@@ -181,11 +183,12 @@ extractDefinition (C.InductiveDefinition n m ar cons) = do
         csi = H.AName (H.NISCons n m i)
     c <- extractConstructor H.EnvNil b
     c' <- mkTelescopeLam H.EnvNil (\e (Application d ds) -> pure ( foldl H.TCApp d ds
-                                                                 , foldl H.TCApp (H.TConst ci) (fmap H.TVar (allFins (H.snOfEnv e)))
+                                                                 , foldl H.TPApp (H.TConst ci) (fmap H.TVar (allFins (H.snOfEnv e)))
                                                                  )) c
     scribe _3 (M.singleton (n, m, i) c')
     pure ((ci, csi), c)
   scribe _1 [H.IndDef si s cs]
+
 extract :: (Show n, Ord n) => [C.Definition n] -> Either () (H.Definitions (H.AName n))
 extract ds = do
   let ((x, (m, r1, r2)), _) = mapM extractDefinition ds

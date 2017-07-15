@@ -135,6 +135,7 @@ cType n (TVar a)    = mapC TVar (cFin n a)
 cType n (TConst c)  = constC n (TConst c)
 cType n TType       = constC n TType
 cType n (TPi a b)   = appC TPi (cType n a) (cType n b)
+cType n (TPApp a b) = appC TPApp (cType n a) (cType n b)
 cType n (TCApp a b) = appC TCApp (cType n a) (cType n b)
 cType n (TApp a b)  = appC TApp (cType n a) (cType n b)
 cType n (TLift a)   = constC n (TLift a)
@@ -197,8 +198,9 @@ data Type n a where
   TType    :: Type n a
   TPi      :: Type n a -> Type n a -> Type n a
   TFix     :: TTFix n a -> Type n a
-  TCApp    :: Type n a -> Type n a -> Type n a
-  TApp     :: Type n a -> Type n a -> Type n a
+  TPApp    :: Type n a -> Type n a -> Type n a -- f ('P :: P x)
+  TCApp    :: Type n a -> Type n a -> Type n a -- f x
+  TApp     :: Type n a -> Type n a -> Type n a -- f @@@ x
   TLift    :: Type n Z -> Type n a
   TUNKNOWN :: Type n a
 
@@ -218,6 +220,7 @@ traverseType f g (TVar a)    = TVar <$> g a
 traverseType f g (TConst a)  = TConst <$> f a
 traverseType f g TType       = pure TType
 traverseType f g (TPi a b)   = TPi <$> traverseType f g a <*> traverseType f g b
+traverseType f g (TPApp a b) = TPApp <$> traverseType f g a <*> traverseType f g b
 traverseType f g (TCApp a b) = TCApp <$> traverseType f g a <*> traverseType f g b
 traverseType f g (TApp a b)  = TApp <$> traverseType f g a <*> traverseType f g b
 traverseType f g (TLift a)   = TLift <$> traverseType f pure a

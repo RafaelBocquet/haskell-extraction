@@ -78,6 +78,7 @@ let rec extract_constr ind genv env c =
          ; Sexp [Atom (MutInd.to_string (fst ci.ci_ind)); Atom (string_of_int (snd ci.ci_ind))]
          ; extract_constr ind genv env scrut
          ; extract_constr ind genv env creturn
+         ; extract_constr ind genv env (Constr.mkApp (creturn,Array.of_list [scrut]))
          ; Sexp (Array.to_list (Array.map (extract_constr ind genv env) bs))
          ]
   | LetIn (x,u,t,c) ->

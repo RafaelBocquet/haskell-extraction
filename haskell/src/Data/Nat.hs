@@ -81,6 +81,14 @@ data Vec :: N -> * -> * where
   VNil :: Vec 'Z a
   VCons :: a -> Vec n a -> Vec ('S n) a
 
+snocVec :: a -> Vec n a -> Vec ('S n) a
+snocVec a VNil = VCons a VNil
+snocVec a (VCons x xs) = VCons x (snocVec a xs)
+
+reverseVec :: Vec n a -> Vec n a
+reverseVec VNil = VNil
+reverseVec (VCons x xs) = snocVec x (reverseVec xs)
+
 snOfVec :: Vec n a -> SN n
 snOfVec VNil         = SZ
 snOfVec (VCons _ xs) = SS (snOfVec xs)

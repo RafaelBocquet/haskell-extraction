@@ -12,7 +12,12 @@ data Expr n a = EVar (Fin a)
               | EPi (Expr n a) (Expr n ('S a))
               | EAbs (Expr n a) (Expr n ('S a))
               | forall m. EFix (Vec m (Expr n a, Expr n (Plus m a))) (Fin m)
-              | ECase (n, Int) (Expr n a) (Expr n a) [Expr n a]
+              | ECase
+                (n, Int) -- (Inductive Type, Constructor Index)
+                (Expr n a) -- Expression to pattern match
+                (Expr n a) -- Return type
+                (Expr n a) -- Applied return type
+                [Expr n a] -- Branches
 
 deriving instance Show n => Show (Expr n a)
 deriving instance Show n => Show (Signature (Expr n) a)

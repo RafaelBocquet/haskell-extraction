@@ -15,6 +15,8 @@ Require Import
 
 Require Import HaskellExtraction.HaskellExtraction.
 
+Fixpoint x t := match t with tt => tt end.
+
 Hextraction
   (* Coq.Init.Logic *)
   (* Coq.Init.Notations *)

@@ -42,8 +42,8 @@ parseExpr c (Sexp [Atom "Fix", Sexp a, Atom b]) = case vecOfList a of
     bs  <- traverse (\(Sexp [a, b]) -> (,) <$> parseExpr c a <*> parseExpr snm b) as
     b' <- parseVar sm . (+ 1) =<< parseInt b
     pure (EFix bs b')
-parseExpr c (Sexp [Atom "Case", Sexp [Atom a, Atom a'], b, c', Sexp d]) =
-  ECase <$> ((a,) <$> parseInt a') <*> parseExpr c b <*> parseExpr c c' <*> mapM (parseExpr c) d
+parseExpr c (Sexp [Atom "Case", Sexp [Atom a, Atom a'], b, c', d, Sexp e]) =
+  ECase <$> ((a,) <$> parseInt a') <*> parseExpr c b <*> parseExpr c c' <*> parseExpr c d <*> mapM (parseExpr c) e
 parseExpr c a                                   = throwError (error (show a))
 
 parseSignature :: SN a -> [Sexp] -> Sexp -> ParseM (Signature (Expr String) a)
