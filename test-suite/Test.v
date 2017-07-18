@@ -26,6 +26,11 @@ Inductive VEC (A:Type) : nat -> Type :=
 | vS : forall n, A -> VEC A n -> VEC A (S n)
 .
 
+Inductive Elem (A:Type) : forall n, VEC A n -> A -> FIN n -> Type :=
+| Here : forall n z zs, Elem A (S n) (vS _ _ z zs) z (fZ _)
+| There : forall n z zs y x, Elem A n zs y x -> Elem A (S n) (vS _ _ z zs) y (fS _ x)
+.
+
 Hextraction
   (* Coq.Init.Logic *)
   (* Coq.Init.Notations *)
