@@ -135,7 +135,7 @@ emitCase n ctx a b c =
                Nothing
                c'
              ]
-  in trace ("emitCase\n" ++ show r) r
+  in r
 
 emitPi :: String -> Vec n (H.Type String n) -> H.Type String n -> H.Type String (S n) -> [Decl]
 emitPi n ctx t s =
@@ -144,36 +144,35 @@ emitPi n ctx t s =
         a <- emitType t
         (x, b) <- extendCtx (emitType s)
         pure [ GDataDecl DataType Nothing
-               (foldl DHApp (fromString n) (toList $ (\x a -> KindedVar (fromString x) a) <$> vs <*> c'))
+               (foldl DHApp (fromString n) (reverse $ toList $ (\x a -> KindedVar (fromString x) a) <$> vs <*> c'))
                (Just (tyFun a)) [] Nothing
              , TypeInsDecl
-               (foldl ($$) (fromString n) (fromString <$> vs) @@ fromString x)
+               (foldl ($$) (fromString n) (fromString <$> reverseVec vs) @@ fromString x)
                b
              ]
-  in trace ("emitPi\n" ++ show (n,ctx,t,s) ++ "\n" ++ show r) r
+  in r
 
-emitLambda :: String -> Vec n (H.Type String n) -> H.Type String n -> String -> H.Type String (S n) -> [Decl]
+emitLambda :: String -> Vec n (H.Type String n) -> H.Type String n -> H.Type String (S n) -> H.Type String (S n) -> [Decl]
 emitLambda n ctx t p s =
   let (vs, r) = runEmit $ extendCtx' (snOfVec ctx) $ do
         c' <- mapM emitType ctx
         a <- emitType t
-        (x, b) <- extendCtx (emitType s)
-        pure $ traceShow ("XXXXXXXXXXXXXXXXXXXXXXXXX",vs,x)
-          [ GDataDecl DataType Nothing
-               (foldl DHApp (fromString n) (reverse $ toList $ (\x a -> KindedVar (fromString x) a) <$> vs <*>  c'))
-               (Just (tyPi a (foldl ($$) (fromString p) [{- TODO: check this -}]))) [] Nothing
-             , TypeInsDecl
-               (foldl ($$) (fromString n) (fromString <$> reverseVec vs) @@@ fromString x)
-               b
-             ]
-  in trace ("emitLam\n" ++ show r) r
+        (x, (b, p')) <- extendCtx ((,) <$> emitType s <*> emitType p)
+        pure $ [ GDataDecl DataType Nothing
+                 (foldl DHApp (fromString n) (reverse $ toList $ (\x a -> KindedVar (fromString x) a) <$> vs <*>  c'))
+                 (Just (tyPi a p')) [] Nothing
+               , TypeInsDecl
+                 (foldl ($$) (fromString n) (fromString <$> reverseVec vs) @@@ fromString x)
+                 b
+               ]
+  in r
 
 emitFix :: String -> Vec n (H.Type String n) -> Vec m (String, String, H.Type String n, H.Type String (Plus m n)) -> Fin m -> [Decl]
 emitFix n ctx v b =
   let (vs, r) = runEmit $ extendCtx' (snOfVec ctx) $ do
         c' <- mapM emitType ctx
-        let cBndrs = toList ((\x a -> KindedVar (fromString x) a) <$> vs <*> c')
-        let appVs vs a = foldl ($$) a (fmap fromString vs)
+        let cBndrs = reverse $ toList ((\x a -> KindedVar (fromString x) a) <$> vs <*> c')
+        let appVs vs a = foldl ($$) a (fmap fromString (reverseVec vs))
         ts <- forM v (emitType . view _3)
         rs <- iforM v $ \i (a, b, _, d) -> do
           (vs2, dTy) <- extendCtx'' (snOfVec v) (emitType d)
@@ -189,7 +188,7 @@ emitFix n ctx v b =
                  [ TypeEqn (appVs vs2 (appVs vs (fromString b))) dTy
                  ]
                ]
-        pure ( TypeDecl (foldl DHApp (fromString n) cBndrs) (foldl ($$) (fromString (lookupVec v b ^. _1)) (fmap fromString vs))
+        pure ( TypeDecl (foldl DHApp (fromString n) cBndrs) (foldl ($$) (fromString (lookupVec v b ^. _1)) (fmap fromString (reverseVec vs)))
                : concat rs)
   in r
 
@@ -201,8 +200,8 @@ emitDefinition (H.IndDef n s c) =
       (c1, c2) = unzip (fmap (uncurry (emitConstructor n')) c)
       n'       = n ++ "'"
   in
-  [ TypeFamDecl  (fromString n) (Just (KindSig (foldl (==>) k (snd <$> tvs)))) Nothing
-  , TypeInsDecl  (fromString n) (fromString n')
+  [ TypeFamDecl  (foldl DHApp (fromString n) ((uncurry KindedVar) <$> tvs)) (Just (KindSig k)) Nothing
+  , TypeInsDecl  (foldl ($$) (fromString n) (TyVar . fst <$> tvs)) (foldl ($$) (fromString n') (TyVar . fst <$> tvs))
   , GDataDecl    DataType Nothing (foldl DHApp (fromString n') (fmap (uncurry KindedVar) tvs)) (Just k) c1 Nothing
   , GDataInsDecl DataType ("Sing" $$ (foldl (\a (x, _) -> a $$ TyVar x) (fromString n') tvs) $$ "b_") (Just star) c2 Nothing
   ]

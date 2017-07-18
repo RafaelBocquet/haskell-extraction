@@ -239,7 +239,7 @@ deriving instance Show n => Show (Case n a)
 data Name m n where
   NConst  :: m -> Name m n
   NPi     :: Env n a -> Type n a -> Type n (S a) -> Name m n
-  NLam    :: Env n a -> Type n a -> n -> Type n (S a) -> Name m n
+  NLam    :: Env n a -> Type n a -> Type n (S a) -> Type n (S a) -> Name m n
   NFix    :: Env n a -> Vec b (n, n, Type n a, Type n (Plus b a)) -> Fin b -> Name m n
   NFix1   :: Env n a -> Vec b (Type n a, Type n (Plus b a)) -> Fin b -> Name m n
   NFix2   :: Env n a -> Vec b (Type n a, Type n (Plus b a)) -> Fin b -> Name m n
@@ -255,7 +255,7 @@ instance Foldable (Name m) where
 instance Traversable (Name m) where
   traverse f (NConst a)   = pure $ NConst a
   traverse f (NPi a b c) = NPi <$> traverseEnv (traverseType f pure) a <*> traverseType f pure b <*> traverseType f pure c
-  traverse f (NLam a b c d) = NLam <$> traverseEnv (traverseType f pure) a <*> traverseType f pure b <*> f c <*> traverseType f pure d
+  traverse f (NLam a b c d) = NLam <$> traverseEnv (traverseType f pure) a <*> traverseType f pure b <*> traverseType f pure c <*> traverseType f pure d
   traverse f (NFix a b c) = NFix
                             <$> traverseEnv (traverseType f pure) a
                             <*> traverse (\(a, b, c, d) -> (,,,) <$> f a <*> f b <*> traverseType f pure c <*> traverseType f pure d) b

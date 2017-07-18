@@ -30,20 +30,22 @@ import Debug.Trace
 newtype ExtractM n a = ExtractM { unExtractM ::
                                       ExceptT ()
                                       (WriterT ( H.Definitions (H.AName n)
-                                               , Map (n, Int) ([Int], Types n Z)
+                                               , Map (n, Int) (Types n Z)
                                                , Map (n, Int, Int) (Types n Z)
                                                )
-                                       (ReaderT ( Map (n, Int) ([Int], Types n Z)
+                                       (ReaderT ( Map (n,Int) [Int]
+                                                , Map (n, Int) (Types n Z)
                                                 , Map (n, Int, Int) (Types n Z)
                                                 )
                                         (State ()))) a }
                      deriving ( Functor, Applicative, Monad
                               , MonadError ()
                               , MonadWriter ( H.Definitions (H.AName n)
-                                            , Map (n, Int) ([Int], Types n Z)
+                                            , Map (n, Int) (Types n Z)
                                             , Map (n, Int, Int) (Types n Z)
                                             )
-                              , MonadReader ( Map (n, Int) ([Int], Types n Z)
+                              , MonadReader ( Map (n,Int) [Int]
+                                            , Map (n, Int) (Types n Z)
                                             , Map (n, Int, Int) (Types n Z)
                                             )
                               )
@@ -72,24 +74,25 @@ mkPi c a' b' = do
 mkLam :: (Show n, Ord n) => H.Env (H.AName n) a -> H.Type (H.AName n) a -> Types n (S a) -> ExtractM n (Types n a)
 mkLam c a' (bTy, b') = do
   let sn = H.snOfEnv c
-  case ( H.dEnv c (H.appC H.Pair (H.cType sn a') (H.liftC (H.cType (SS sn) bTy)))
-       , H.dEnv c (H.appC H.Pair (H.cType sn a') (H.liftC (H.cType (SS sn) b')))
-       ) of
-    ( H.D s1 (H.Pair c1 (H.Pair a1 (H.L b1))), H.D s2 (H.Pair c2 (H.Pair a2 (H.L b2)))) -> do
-      let nPi  = H.AName (H.NPi c1 a1 b1)
-          nLam = H.AName (H.NLam c2 a2 nPi b2)
-      pure ( H.TPi a' (foldr (\v t -> H.TCApp t (H.TVar v)) (H.TConst nPi) (H.snList s1))
-           , foldr (\v t -> H.TCApp t (H.TVar v)) (H.TConst nLam) (H.snList s2)
-           )
+  case H.dEnv c (H.appC H.Pair (H.cType sn a') (H.appC H.Pair (H.liftC (H.cType (SS sn) bTy)) (H.liftC (H.cType (SS sn) b')))) of
+    H.D s1 (H.Pair c1 (H.Pair a1 (H.Pair (H.L bTy1) (H.L b1)))) ->
+      let sn1 = H.snOfSub s1 in
+      case H.dEnv c1 (H.appC H.Pair (H.cType sn1 a1) (H.liftC (H.cType (SS sn1) bTy1))) of
+        H.D s2 (H.Pair c2 (H.Pair a2 (H.L bTy2))) -> do
+          let nPi  = H.AName (H.NPi c2 a2 bTy2)
+              nLam = H.AName (H.NLam c1 a1 (H.mapType id FS (foldr (\v t -> H.TCApp t (H.TVar v)) (H.TConst nPi) (H.snList s2))) b1)
+          pure ( H.TPi a' (foldr (\v t -> H.TCApp t (H.TVar v)) (H.TConst nPi) (H.snList (H.subTrans s2 s1)))
+               , foldr (\v t -> H.TCApp t (H.TVar v)) (H.TConst nLam) (H.snList s1)
+               )
 
 extractTerm :: (Show n, Ord n) => H.Env (H.AName n) a -> C.Expr n a -> ExtractM n (H.Type (H.AName n) a, H.Type (H.AName n) a)
 extractTerm c (C.EVar x)   = pure (H.envLookup x c, H.TVar x)
-extractTerm c (C.EConst x) = pure (error "CONST")
-extractTerm c (C.EInd x i) = view _1 <&> M.lookup (x, i)
+extractTerm c (C.EConst x) = pure (H.TUNKNOWN, H.TConst (H.AName (H.NConst x)))
+  -- pure (error "CONST")
+extractTerm c (C.EInd x i) = view _2 <&> M.lookup (x, i)
                              <&> fromJust
-                             <&> snd
                              <&> bimap H.TLift H.TLift
-extractTerm c (C.ECons x i j) = view _2 <&> M.lookup (x, i, j-1)
+extractTerm c (C.ECons x i j) = view _3 <&> M.lookup (x, i, j-1)
                                 <&> fromJust
                                 <&> bimap H.TLift H.TLift
 extractTerm c C.EType      = pure (H.TType, H.TType)
@@ -125,10 +128,9 @@ extractTerm c (C.EFix a b) = do
            )
 extractTerm c (C.ECase cons scrut retType appRetType branchs) = do
   let sn = H.snOfEnv c
-  ars <- ExtractM (lift $ lift $ view _1 <&> M.lookup cons)
+  ars <- view _1
+         <&> M.lookup cons
          <&> fromJust
-         <&> fst
-  let ars = [0,1] -- ...
   branchs' <- zipWith3
                (\ar i e -> do
                    case esnOfInt ar of
@@ -176,18 +178,26 @@ extractDefinition (C.ConstantDefinition n a) = do
 extractDefinition (C.InductiveDefinition n m ar cons) = do
   s <- extractSignature H.EnvNil ar
   let si = H.AName (H.NInd n m)
-  s' <- mkTelescopeLam H.EnvNil (\e _ -> pure (H.TType, foldl H.TCApp (H.TConst si) (fmap H.TVar (allFins (H.snOfEnv e))))) s
-  scribe _2 (M.singleton (n, m) (telescopeLength . snd <$> cons, s'))
+  s' <- mkTelescopeLam H.EnvNil (\e _ -> pure (H.TType, foldl H.TCApp (H.TConst si) (fmap H.TVar (reverseVec (allFins (H.snOfEnv e)))))) s
+  scribe _2 (M.singleton (n, m) s')
   cs <- forM (zip [0..] cons) $ \(i, (a, b)) -> do
     let ci = H.AName (H.NICons n m i)
         csi = H.AName (H.NISCons n m i)
     c <- extractConstructor H.EnvNil b
-    c' <- mkTelescopeLam H.EnvNil (\e (Application d ds) -> pure ( foldl H.TCApp d ds
-                                                                 , foldl H.TPApp (H.TConst ci) (fmap H.TVar (allFins (H.snOfEnv e)))
+    c' <- mkTelescopeLam H.EnvNil (\e (Application d ds) -> pure ( foldl H.TApp d ds
+                                                                 , foldl H.TPApp (H.TConst ci) (fmap H.TVar (reverseVec (allFins (H.snOfEnv e))))
                                                                  )) c
     scribe _3 (M.singleton (n, m, i) c')
     pure ((ci, csi), c)
   scribe _1 [H.IndDef si s cs]
+
+extractOneInductiveArities :: (Show n, Ord n) => C.Definition n -> Map (n,Int) [Int]
+extractOneInductiveArities (C.ConstantDefinition _ _) = mempty
+extractOneInductiveArities (C.InductiveDefinition n m ar cons)
+  = M.singleton (n,m) (fmap (telescopeLength . snd) cons)
+
+extractInductiveArities :: (Show n, Ord n) => [C.Definition n] -> Map (n, Int) [Int]
+extractInductiveArities ds = mconcat (extractOneInductiveArities <$> ds)
 
 extract :: (Show n, Ord n) => [C.Definition n] -> Either () (H.Definitions (H.AName n))
 extract ds = do
@@ -195,6 +205,6 @@ extract ds = do
                               & unExtractM
                               & runExceptT
                               & runWriterT
-                              & (runReaderT ?? (r1, r2))
+                              & (runReaderT ?? (extractInductiveArities ds, r1, r2))
                               & (runState ?? ())
   const m <$> x

@@ -7,6 +7,7 @@ Require Import
   Coq.Vectors.VectorDef
   Coq.Vectors.VectorSpec
   Coq.Logic.JMeq
+  Coq.Init.Nat
   Coq.Arith.Lt
   Coq.Arith.EqNat
   Coq.Arith.PeanoNat
@@ -15,7 +16,15 @@ Require Import
 
 Require Import HaskellExtraction.HaskellExtraction.
 
-Fixpoint x t := match t with tt => tt end.
+Inductive FIN : nat -> Type :=
+| fZ : forall n, FIN (S n)
+| fS : forall n, FIN n -> FIN (S n)
+.
+
+Inductive VEC (A:Type) : nat -> Type :=
+| vZ : VEC A 0
+| vS : forall n, A -> VEC A n -> VEC A (S n)
+.
 
 Hextraction
   (* Coq.Init.Logic *)
@@ -35,5 +44,5 @@ Hextraction
   (* Coq.Vectors.Fin *)
   (* Coq.Vectors.VectorDef *)
   (* Coq.Vectors.VectorSpec *)
-  , unit nat plus
+, nat plus mult divmod FIN VEC
 .
